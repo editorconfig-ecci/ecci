@@ -1,0 +1,42 @@
+name: Action Lint
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  action-lint:
+    name: Action Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+          cache: false
+
+      # use my fork until https://github.com/rhysd/actionlint/pull/375 is merged
+      # - name: Install Actions Lint
+      #   run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+
+      - name: Checkout Actions Lint fork
+        uses: actions/checkout@v4
+        with:
+          repository: kounoike/actionlint
+          ref: inline-ignore
+          path: actionlint
+      - name: Install Actions Lint fork
+        run: go install ./cmd/actionlint
+        working-directory: actionlint
+
+      - name: Run Actions Lint
+        # actionlint ignore=SC2016
+        run: find .github/workflows -name '*.yml' -exec actionlint -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Message}}%0A```%0A{{replace $err.Snippet "\\n" "%0A"}}%0A```\n{{end}}' {} \;
