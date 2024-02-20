@@ -40,9 +40,10 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy
+      - name: Run cargo check
+        run: cargo check --workspace --all-targets --release
       - name: Run clippy
-        run: |
-          cargo lint
+        run: cargo clippy
 
   check-dependencies:
     name: Check dependencies
