@@ -59,3 +59,12 @@ jobs:
         run: cargo +nightly udeps --all-targets
 
 # TODO: run tests
+
+  actions-timeline:
+    name: Actions timeline
+    permissions:
+      actions: read
+    needs: [format, lint, check-dependencies]
+    runs-on: ubuntu-latest
+    steps:
+      uses: Kesin11/actions-timeline@v2
