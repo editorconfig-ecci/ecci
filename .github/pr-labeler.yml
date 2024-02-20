@@ -1,0 +1,22 @@
+feature:
+  - 'feature/*'
+  - 'feat/*'
+  - 'feature-*'
+  - 'feat-*'
+enhancement:
+  - 'enhancement/*'
+  - 'enhance/*'
+  - 'enhancement-*'
+  - 'enhance-*'
+  - 'improvement/*'
+  - 'improve/*'
+  - 'improvement-*'
+  - 'improve-*'
+documentation:
+  - 'docs/*'
+  - 'doc/*'
+  - 'docs-*'
+  - 'doc-*'
+chore:
+  - 'chore/*'
+  - 'chore-*'

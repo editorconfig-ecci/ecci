@@ -1,0 +1,29 @@
+changelog:
+  exclude:
+    labels:
+      - 'dependencies'
+    authors:
+      - 'dependabot[bot]'
+  categories:
+    - title: '🧨 Breaking Changes'
+      labels:
+        - 'breaking'
+        - 'major'
+    - title: '🚀 Features'
+      labels:
+        - 'feature'
+    - title: '💪 Enhancements'
+      labels:
+        - 'enhancement'
+    - title: '📚 Documentation'
+      labels:
+        - 'documentation'
+    - title: '🐛 Bug Fixes'
+      labels:
+        - 'bugfix'
+    - title: '🧰 Maintenance'
+      labels:
+        - 'chore'
+    - title: '⛓️ Dependencies'
+      labels:
+        - 'dependencies'

@@ -1,0 +1,19 @@
+name: tagpr
+on:
+  push:
+    branches:
+    - "main"
+jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    steps:
+    - name: setup go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.x
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: tagpr
+      uses: Songmu/tagpr@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
