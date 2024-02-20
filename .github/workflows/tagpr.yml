@@ -14,7 +14,13 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v4
+    - name: create token
+      id: create-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ vars.APP_ID }}
+        private-key: ${{ secrets.PRIVATE_KEY }}
     - name: tagpr
       uses: Songmu/tagpr@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.create-token.outputs.token }}
