@@ -10,7 +10,13 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    labels:
+      - "devcontainer"
+      - "dependencies"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: weekly
+    labels:
+      - "cargo"
+      - "dependencies"
