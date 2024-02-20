@@ -66,6 +66,8 @@ jobs:
 
   actions-timeline:
     name: Actions timeline
+    permissions:
+      actions: read
     needs: [format, lint, check-dependencies]
     runs-on: ubuntu-latest
     steps:
