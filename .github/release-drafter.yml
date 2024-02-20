@@ -1,4 +1,4 @@
-template: ''
+template: 'dummy'
 autolabeler:
   - label: 'feature'
     branch:
