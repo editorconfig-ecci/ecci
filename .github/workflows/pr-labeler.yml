@@ -1,15 +1,22 @@
-name: PR size labeler
+name: PR Labeler
 on: [pull_request]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
-  pr-size-labeler:
+  pr-labeler:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
+      - name: PR Labeler by branch names
+        uses: TimonVS/pr-labeler-action@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/pr-labeler.yml # default
       # change to codelytv/pr-size-labeler@v1 when https://github.com/CodelyTV/pr-size-labeler/pull/63 is merged
-      - uses: kounoike/pr-size-labeler@ignore-regex
+      - name: PR Size Labeler
+        uses: kounoike/pr-size-labeler@ignore-regex
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           xs_label: "size/xs"
