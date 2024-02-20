@@ -1,0 +1,24 @@
+name: PR size labeler
+on: [pull_request]
+
+jobs:
+  pr-size-labeler:
+    runs-on: ubuntu-latest
+    steps:
+      # change to codelytv/pr-size-labeler@v1 when https://github.com/CodelyTV/pr-size-labeler/pull/63 is merged
+      - uses: kounoike/pr-size-labeler@ignore-regex
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: "size/xs"
+          xs_max_size: "10"
+          s_label: "size/s"
+          s_max_size: "100"
+          m_label: "size/m"
+          m_max_size: "500"
+          l_label: "size/l"
+          l_max_size: "1000"
+          xl_label: "size/xl"
+          fail_if_xl: "false"
+          message_if_xl: ""
+          files_to_ignore: |
+            "Cargo.lock"
