@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.0.4](https://github.com/kounoike/ecci/compare/v0.0.3...v0.0.4) - 2024-02-20
+### 🐛 Bug Fixes
+- fix update-semver.yml by @kounoike in https://github.com/kounoike/ecci/pull/38
+- fix update-semver tag pattern by @kounoike in https://github.com/kounoike/ecci/pull/41
+### 🧰 Maintenance
+- use GitHub Apps for tagpr token by @kounoike in https://github.com/kounoike/ecci/pull/40
+
 ## [v0.0.3](https://github.com/kounoike/ecci/compare/v0.0.2...v0.0.3) - 2024-02-20
 ### 🧰 Maintenance
 - change dependabot labels by @kounoike in https://github.com/kounoike/ecci/pull/35
