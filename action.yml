@@ -1,0 +1,5 @@
+name: 'ecci'
+desctiption: 'Check .editorconfig settings is applied'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

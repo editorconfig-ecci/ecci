@@ -8,6 +8,12 @@
     "ghcr.io/devcontainers/features/python:1": {
       "installTools": true,
       "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": true,
+      "installDockerBuildx": true,
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
     }
   },
   // Use 'mounts' to make the cargo cache persistent in a Docker Volume.
