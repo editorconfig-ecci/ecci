@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.0.2](https://github.com/kounoike/ecci/compare/v0.0.1...v0.0.2) - 2024-02-20
+### 🐛 Bug Fixes
+- fix: "template" is not allowed to be empty by @kounoike in https://github.com/kounoike/ecci/pull/30
+- remove ignore-branches by @kounoike in https://github.com/kounoike/ecci/pull/29
+### 🧰 Maintenance
+- update release-drafter@v6 by @kounoike in https://github.com/kounoike/ecci/pull/32
+- add github-actions in dependabot.yml by @kounoike in https://github.com/kounoike/ecci/pull/33
+
 ## [v0.0.1](https://github.com/kounoike/ecci/commits/v0.0.1) - 2024-02-20
 ### 🚀 Features
 - add docker action support by @kounoike in https://github.com/kounoike/ecci/pull/20
