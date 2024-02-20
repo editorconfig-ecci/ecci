@@ -1,0 +1,24 @@
+template: ''
+autolabeler:
+  - label: 'feature'
+    branch:
+      - '/feat(?:ure)?[-/].*/'
+  - label: 'enhancement'
+    branch:
+      - '/enhance(?:ment)?[-/].*/'
+  - label: 'documentation'
+    files:
+      - 'docs/**'
+      - '*.md'
+    branch:
+      - '/docs?[-/].*/'
+  - label: 'bugfix'
+    branch:
+      - '/bug[-/].*/'
+      - '/fix[-/].*/'
+  - label: 'chore'
+    files:
+      - '.github/*'
+      - '.devcontainer/*'
+    branch:
+      - '/chore[-/].*/'
