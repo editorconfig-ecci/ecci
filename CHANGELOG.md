@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.3](https://github.com/kounoike/ecci/compare/v0.0.2...v0.0.3) - 2024-02-20
+### 🧰 Maintenance
+- change dependabot labels by @kounoike in https://github.com/kounoike/ecci/pull/35
+- change tags regexp for update-semver by @kounoike in https://github.com/kounoike/ecci/pull/37
+
 ## [v0.0.2](https://github.com/kounoike/ecci/compare/v0.0.1...v0.0.2) - 2024-02-20
 ### 🐛 Bug Fixes
 - fix: "template" is not allowed to be empty by @kounoike in https://github.com/kounoike/ecci/pull/30
