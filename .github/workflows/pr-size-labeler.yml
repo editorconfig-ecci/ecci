@@ -4,6 +4,9 @@ on: [pull_request]
 jobs:
   pr-size-labeler:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       # change to codelytv/pr-size-labeler@v1 when https://github.com/CodelyTV/pr-size-labeler/pull/63 is merged
       - uses: kounoike/pr-size-labeler@ignore-regex
