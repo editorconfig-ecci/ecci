@@ -2,9 +2,7 @@ name: Pull request
 on:
   pull_request:
     branches:
-      - main
-    branches-ignore:
-      - 'tagpr-from-v[0-9]*.[0-9]*.[0-9]*'
+      - '!tagpr-from-v[0-9]+.[0-9]+.[0-9]+'
     paths:
       - 'src/**'
       - '.github/workflows/pull_request.yml'
