@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.5](https://github.com/kounoike/ecci/compare/v0.0.4...v0.0.5) - 2024-02-20
+### 🧰 Maintenance
+- use created token for actions/checkout by @kounoike in https://github.com/kounoike/ecci/pull/42
+- ignore rust CI for tagpr branches by @kounoike in https://github.com/kounoike/ecci/pull/44
+
 ## [v0.0.4](https://github.com/kounoike/ecci/compare/v0.0.3...v0.0.4) - 2024-02-20
 ### 🐛 Bug Fixes
 - fix update-semver.yml by @kounoike in https://github.com/kounoike/ecci/pull/38
