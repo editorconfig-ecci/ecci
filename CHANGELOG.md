@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.6](https://github.com/kounoike/ecci/compare/v0.0.5...v0.0.6) - 2024-02-20
+### 🐛 Bug Fixes
+- fix pullrequest.yml condition by @kounoike in https://github.com/kounoike/ecci/pull/46
+- use actions/checkout by @kounoike in https://github.com/kounoike/ecci/pull/45
+
 ## [v0.0.5](https://github.com/kounoike/ecci/compare/v0.0.4...v0.0.5) - 2024-02-20
 ### 🧰 Maintenance
 - use created token for actions/checkout by @kounoike in https://github.com/kounoike/ecci/pull/42
