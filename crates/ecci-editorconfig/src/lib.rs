@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use std::ffi::CString;
-use std::fs::{self, File};
-use std::io::{BufRead, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 #[allow(non_camel_case_types)]
