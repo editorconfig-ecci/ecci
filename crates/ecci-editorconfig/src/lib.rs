@@ -1,8 +1,7 @@
 use std::ffi::CString;
 use std::path::{Path, PathBuf};
 
-#[allow(non_camel_case_types)]
-#[allow(dead_code)]
+#[allow(dead_code, non_camel_case_types)]
 mod bindings;
 
 #[derive(Debug, PartialEq)]
@@ -132,7 +131,7 @@ mod tests {
         let config = Config::from_path(Path::new("testdata/test.txt")).unwrap();
         assert_eq!(config.indent_style, Some(IndentStyle::Space));
         assert_eq!(config.indent_size, Some(4));
-        assert_eq!(config.indent_size_is_tab, false);
+        assert!(!config.indent_size_is_tab);
         assert_eq!(config.tab_width, Some(8));
         assert_eq!(config.end_of_line, Some(EndOfLine::LF));
         assert_eq!(config.charset, Some(Charset::UTF8));
