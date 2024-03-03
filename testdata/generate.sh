@@ -63,3 +63,11 @@ pushd indent_size
         echo -ne "a\n  b\nc\n" > error_2.target
     popd
 popd
+
+# trim_trailing_whitespace
+[ -d trim_trailing_whitespace ] || mkdir -p trim_trailing_whitespace
+pushd trim_trailing_whitespace
+    echo -ne "[*.target]\ntrim_trailing_whitespace = true\n" > .editorconfig
+    echo -ne "a\nb\nc\n" > no_error.target
+    echo -ne "a\nb  \nc\n" > error.target
+popd
