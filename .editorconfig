@@ -10,3 +10,5 @@ indent_size = 4
 [.tagpr]
 indent_style = tab
 tab_width = 4
+[*.sh]
+indent_size = 4
