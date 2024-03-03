@@ -1,0 +1,2 @@
+[*.target]
+max_line_length = 10
