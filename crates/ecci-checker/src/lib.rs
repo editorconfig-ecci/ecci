@@ -1,6 +1,12 @@
 use ecci_editorconfig::*;
 use std::io::BufRead;
+mod charset;
 mod end_of_line;
+mod indent_size;
+mod indent_style;
+mod insert_final_newline;
+mod max_line_length;
+mod trim_trailing_whitespace;
 
 #[cfg(test)]
 use mockall::automock;
@@ -24,7 +30,13 @@ fn check_line<T: Output>(
     line_number: usize,
     content: &str,
 ) {
-    end_of_line::check_end_of_line(config, output, line_number, content)
+    indent_style::check_indent_style(config, output, line_number, content);
+    indent_size::check_indent_size(config, output, line_number, content);
+    end_of_line::check_end_of_line(config, output, line_number, content);
+    charset::check_charset(config, output, line_number, content);
+    trim_trailing_whitespace::check_trim_trailing_whitespace(config, output, line_number, content);
+    insert_final_newline::check_insert_final_newline(config, output, line_number, content);
+    max_line_length::check_max_line_length(config, output, line_number, content);
 }
 
 pub fn check_all<T: Output>(config: &Config, output: &mut T) -> std::io::Result<()> {
