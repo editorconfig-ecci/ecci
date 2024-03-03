@@ -46,3 +46,20 @@ pushd indent_style
         echo -ne "a\n  b\nc\n" > error_space.target
     popd
 popd
+
+# indent_size
+[ -d indent_size ] || mkdir -p indent_size
+pushd indent_size
+    [ -d 2 ] || mkdir -p 2
+    pushd 2
+        echo -ne "[*.target]\nindent_size = 2\n" > .editorconfig
+        echo -ne "a\n  b\nc\n" > no_error.target
+        echo -ne "a\n   b\nc\n" > error_3.target
+    popd
+    [ -d 4 ] || mkdir -p 4
+    pushd 4
+        echo -ne "[*.target]\nindent_size = 4\n" > .editorconfig
+        echo -ne "a\n    b\nc\n" > no_error.target
+        echo -ne "a\n  b\nc\n" > error_2.target
+    popd
+popd
