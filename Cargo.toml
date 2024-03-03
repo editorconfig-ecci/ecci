@@ -1,5 +1,5 @@
 [workspace]
 
-members = ["crates/ecci", "crates/ecci-editorconfig"]
+members = ["crates/ecci", "crates/ecci-checker", "crates/ecci-editorconfig"]
 
 resolver = "2"
