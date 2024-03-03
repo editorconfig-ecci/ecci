@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let config = Config::from_path(Path::new("testdata/test.txt")).unwrap();
+        let config = Config::from_path(Path::new("../../testdata/simple/test.txt")).unwrap();
         assert_eq!(config.indent_style, Some(IndentStyle::Space));
         assert_eq!(config.indent_size, Some(4));
         assert!(!config.indent_size_is_tab);

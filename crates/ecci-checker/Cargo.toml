@@ -1,0 +1,12 @@
+[package]
+name = "ecci-checker"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ecci-editorconfig = { version = "0.0.0", path = "../ecci-editorconfig" }
+
+[dev-dependencies]
+mockall = "0.12.1"
