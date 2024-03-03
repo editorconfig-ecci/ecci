@@ -4,7 +4,7 @@ on:
     branches:
       - '!tagpr-from-v[0-9]+.[0-9]+.[0-9]+'
     paths:
-      - 'crates/**'
+      - 'crates/**/*.rs'
       - '.github/workflows/pull_request.yml'
       - 'Cargo.toml'
       - 'Cargo.lock'
