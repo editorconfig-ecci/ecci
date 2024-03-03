@@ -29,3 +29,20 @@ pushd end_of_line
         echo -ne "a\nb\nc\n" > error_lf.target
     popd
 popd
+
+# indent_style
+[ -d indent_style ] || mkdir -p indent_style
+pushd indent_style
+    [ -d space ] || mkdir -p space
+    pushd space
+        echo -ne "[*.target]\nindent_style = space\n" > .editorconfig
+        echo -ne "a\n  b\nc\n" > no_error.target
+        echo -ne "a\n\t\tb\nc\n" > error_tab.target
+    popd
+    [ -d tab ] || mkdir -p tab
+    pushd tab
+        echo -ne "[*.target]\nindent_style = tab\n" > .editorconfig
+        echo -ne "a\n\t\tb\nc\n" > no_error.target
+        echo -ne "a\n  b\nc\n" > error_space.target
+    popd
+popd
