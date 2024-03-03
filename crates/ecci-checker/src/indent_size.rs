@@ -18,7 +18,6 @@ pub fn check_indent_size<T: Output>(
                     break;
                 }
             }
-            println!("[{:?}] indent: {} size: {}", content, indent, size);
             if indent % size != 0 {
                 output.output(
                     line_number,
