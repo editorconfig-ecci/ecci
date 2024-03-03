@@ -71,3 +71,14 @@ pushd trim_trailing_whitespace
     echo -ne "a\nb\nc\n" > no_error.target
     echo -ne "a\nb  \nc\n" > error.target
 popd
+
+# max_line_length
+[ -d max_line_length ] || mkdir -p max_line_length
+pushd max_line_length
+    [ -d 10 ] || mkdir -p 10
+    pushd 10
+        echo -ne "[*.target]\nmax_line_length = 10\n" > .editorconfig
+        echo -ne "a\nbbbbbbbbbb\nc\n" > no_error.target
+        echo -ne "a\nbbbbbbbbbbbb\nc\n" > error.target
+    popd
+popd
