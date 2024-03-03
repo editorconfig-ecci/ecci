@@ -8,7 +8,6 @@ pub fn check_indent_style<T: Output>(
     line_number: usize,
     content: &str,
 ) {
-    println!("{:?} [{:?}]", config.indent_style, content);
     if let Some(IndentStyle::Space) = config.indent_style {
         if content.starts_with('\t') {
             output.output(
