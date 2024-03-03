@@ -1,8 +1,9 @@
 name: Pull request
 on:
   pull_request:
-    branches:
-      - '!tagpr-from-v[0-9]+.[0-9]+.[0-9]+'
+    types: [opened, synchronize]
+    branches-ignore:
+      - 'tagpr-from-v[0-9]+.[0-9]+.[0-9]+'
     paths:
       - 'crates/**'
       - '.github/workflows/pull_request.yml'
