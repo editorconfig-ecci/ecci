@@ -2,7 +2,19 @@ FROM rust:1-alpine AS builder
 
 WORKDIR /app
 RUN apk add --no-cache editorconfig-dev=0.12.11-r0
+
+# Fetching is keyed only by the manifests and lockfile. Keep it before the
+# source copy so a source-only change can reuse this layer from BuildKit's cache.
 COPY Cargo.toml Cargo.lock ./
+COPY crates/ecci/Cargo.toml crates/ecci/Cargo.toml
+COPY crates/ecci-checker/Cargo.toml crates/ecci-checker/Cargo.toml
+COPY crates/ecci-editorconfig/Cargo.toml crates/ecci-editorconfig/Cargo.toml
+# Cargo validates every workspace member before fetching. These placeholder
+# targets make the manifest-only workspace valid without copying real sources.
+RUN mkdir -p crates/ecci/src crates/ecci-checker/src crates/ecci-editorconfig/src \
+    && touch crates/ecci/src/main.rs crates/ecci-checker/src/lib.rs crates/ecci-editorconfig/src/lib.rs
+RUN cargo fetch --locked
+
 COPY crates ./crates
 RUN RUSTFLAGS="-C target-feature=-crt-static -L native=/usr/lib" cargo build --locked --release --package ecci
 

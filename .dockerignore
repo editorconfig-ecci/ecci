@@ -1,0 +1,8 @@
+.git
+target
+.github
+.devcontainer
+CHANGELOG.md
+LICENSE
+README.md
+testdata
