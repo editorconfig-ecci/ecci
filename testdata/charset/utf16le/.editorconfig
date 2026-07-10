@@ -1,0 +1,3 @@
+root = true
+[*.target]
+charset = utf-16le

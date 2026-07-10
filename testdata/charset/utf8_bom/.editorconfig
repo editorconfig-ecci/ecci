@@ -1,0 +1,4 @@
+root = true
+[*.target]
+charset = UTF-8-BOM
+end_of_line = lf

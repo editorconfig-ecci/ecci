@@ -30,6 +30,48 @@ pushd end_of_line
     popd
 popd
 
+# charset
+[ -d charset ] || mkdir -p charset
+pushd charset
+    [ -d utf8 ] || mkdir -p utf8
+    pushd utf8
+        echo -ne "root = true\n[*.target]\ncharset = utf-8\n" > .editorconfig
+        printf '\x63\x61\x66\xc3\xa9\x0a' > no_error_non_ascii.target
+        printf '\xef\xbb\xbf\x63\x61\x66\xc3\xa9\x0a' > error_bom.target
+        printf '\xc3\x28\x0a' > error_invalid_sequence.target
+    popd
+    [ -d utf8_bom ] || mkdir -p utf8_bom
+    pushd utf8_bom
+        echo -ne "root = true\n[*.target]\ncharset = UTF-8-BOM\nend_of_line = lf\n" > .editorconfig
+        printf '\xef\xbb\xbf\x63\x61\x66\xc3\xa9\x0a' > no_error_non_ascii.target
+        printf '\x63\x61\x66\xc3\xa9\x0a' > error_missing_bom.target
+        : > error_empty.target
+    popd
+    [ -d latin1 ] || mkdir -p latin1
+    pushd latin1
+        echo -ne "root = true\n[*.target]\ncharset = latin1\n" > .editorconfig
+        printf '\x63\x61\x66\xe9\x0a' > no_error_non_ascii.target
+    popd
+    [ -d utf16be ] || mkdir -p utf16be
+    pushd utf16be
+        echo -ne "root = true\n[*.target]\ncharset = utf-16be\n" > .editorconfig
+        printf '\x00\x63\x00\x61\x00\x66\x00\xe9\x00\x0a' > no_error_non_ascii.target
+        printf '\x00' > error_odd_byte_length.target
+    popd
+    [ -d utf16le ] || mkdir -p utf16le
+    pushd utf16le
+        echo -ne "root = true\n[*.target]\ncharset = utf-16le\n" > .editorconfig
+        printf '\x63\x00\x61\x00\x66\x00\xe9\x00\x0a\x00' > no_error_non_ascii.target
+        printf '\x00' > error_odd_byte_length.target
+    popd
+    [ -d unset ] || mkdir -p unset/nested
+    pushd unset
+        echo -ne "root = true\n[*.target]\ncharset = utf-8\n" > .editorconfig
+        echo -ne "[*.target]\ncharset = unset\n" > nested/.editorconfig
+        printf '\x63\x61\x66\xe9\x0a' > nested/no_error_latin1.target
+    popd
+popd
+
 # indent_style
 [ -d indent_style ] || mkdir -p indent_style
 pushd indent_style
