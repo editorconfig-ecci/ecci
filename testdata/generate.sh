@@ -64,6 +64,44 @@ pushd indent_size
     popd
 popd
 
+# tab_width
+[ -d tab_width ] || mkdir -p tab_width
+pushd tab_width
+    [ -d minimum ] || mkdir -p minimum
+    pushd minimum
+        echo -ne "root = true\n[*.target]\ntab_width = 1\n" > .editorconfig
+        echo -ne "root\n" > target.target
+    popd
+    [ -d numeric_indent_size ] || mkdir -p numeric_indent_size
+    pushd numeric_indent_size
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = 4\ntab_width = 2\n" > .editorconfig
+        echo -ne "root\n    child\n" > no_error.target
+    popd
+    [ -d indent_size_tab ] || mkdir -p indent_size_tab
+    pushd indent_size_tab
+        echo -ne "root = true\n[*.target]\nindent_style = tab\nindent_size = tab\ntab_width = 4\n" > .editorconfig
+        echo -ne "root\n\tchild\n\t\tgrandchild\n" > no_error.target
+    popd
+    [ -d unset/nested ] || mkdir -p unset/nested
+    pushd unset
+        echo -ne "root = true\n[*.target]\nindent_style = tab\nindent_size = tab\ntab_width = 8\n" > .editorconfig
+        pushd nested
+            echo -ne "[*.target]\ntab_width = UnSeT\n" > .editorconfig
+            echo -ne "root\n\tchild\n" > no_error.target
+        popd
+    popd
+    [ -d zero ] || mkdir -p zero
+    pushd zero
+        echo -ne "root = true\n[*.target]\ntab_width = 0\n" > .editorconfig
+        echo -ne "root\n" > target.target
+    popd
+    [ -d negative ] || mkdir -p negative
+    pushd negative
+        echo -ne "root = true\n[*.target]\ntab_width = -1\n" > .editorconfig
+        echo -ne "root\n" > target.target
+    popd
+popd
+
 # trim_trailing_whitespace
 [ -d trim_trailing_whitespace ] || mkdir -p trim_trailing_whitespace
 pushd trim_trailing_whitespace

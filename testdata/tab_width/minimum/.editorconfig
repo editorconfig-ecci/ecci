@@ -1,0 +1,4 @@
+root = true
+
+[*.target]
+tab_width = 1
