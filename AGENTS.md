@@ -7,7 +7,8 @@ GitHub Action.
 
 ## Working rules
 
-- Write all repository documentation and documentation changes in English.
+- Write repository documentation, issues, pull-request titles and descriptions,
+  and review comments in English.
 - Keep `README.md` brief and human-facing: purpose, installation, basic usage,
   and links only. Put user guidance in `docs/user/`, design rationale in
   `docs/design/`, and contributor workflows in `docs/development/`.

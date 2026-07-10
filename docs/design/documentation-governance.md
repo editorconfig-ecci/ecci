@@ -5,6 +5,9 @@
 This policy governs repository documentation. All documentation, including new
 pages and edits to existing pages, must be written in English.
 
+Use English for repository collaboration as well: write issues, pull-request
+titles and descriptions, and review comments in English.
+
 Documentation is written for people. Instructions for coding agents belong in
 the root [AGENTS.md](../../AGENTS.md), with extended agent-only guidance under
 `docs/agents/` when it becomes necessary. Do not place agent instructions in
