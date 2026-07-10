@@ -1,0 +1,3 @@
+root = true
+[*.target]
+trim_trailing_whitespace = TRUE
