@@ -9,6 +9,8 @@ GitHub Action.
 
 - Write repository documentation, issues, pull-request titles and descriptions,
   and review comments in English.
+- Communicate with users in their preferred language. This exception does not
+  apply to repository artifacts, which must be written in English.
 - Keep `README.md` brief and human-facing: purpose, installation, basic usage,
   and links only. Put user guidance in `docs/user/`, design rationale in
   `docs/design/`, and contributor workflows in `docs/development/`.
