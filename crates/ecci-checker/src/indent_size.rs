@@ -199,15 +199,12 @@ mod tests {
     #[test]
     fn zero_indent_size_does_not_panic() {
         let target_path = "../../testdata/indent_size/zero/zero.target";
-        let config =
-            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
-        assert_eq!(config.indent_size, Some(0));
+        let result = std::panic::catch_unwind(|| {
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path))
+        });
 
-        let mut mock = MockOutput::new();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            check_all(&config, &mut mock)
-        }));
-        assert!(result.is_ok());
-        assert!(result.unwrap().is_ok());
+        // libeditorconfig resolves this to tab_width = 0. That is invalid under
+        // the tab_width contract, but configuration parsing must not panic.
+        assert!(matches!(result, Ok(Err(_))));
     }
 }
