@@ -139,4 +139,66 @@ mod tests {
         assert_eq!(config.insert_final_newline, Some(true));
         assert_eq!(config.max_line_length, Some(100));
     }
+
+    #[test]
+    fn tab_width_parses_minimum_positive_value() {
+        let config =
+            Config::from_path(Path::new("../../testdata/tab_width/minimum/target.target")).unwrap();
+
+        assert_eq!(config.tab_width, Some(1));
+    }
+
+    #[test]
+    fn tab_width_is_independent_from_numeric_indent_size() {
+        let config = Config::from_path(Path::new(
+            "../../testdata/tab_width/numeric_indent_size/no_error.target",
+        ))
+        .unwrap();
+
+        assert_eq!(config.tab_width, Some(2));
+        assert_eq!(config.indent_size, Some(4));
+        assert!(!config.indent_size_is_tab);
+    }
+
+    #[test]
+    fn tab_width_interacts_with_indent_size_tab() {
+        let config = Config::from_path(Path::new(
+            "../../testdata/tab_width/indent_size_tab/no_error.target",
+        ))
+        .unwrap();
+
+        assert_eq!(config.tab_width, Some(4));
+        assert_eq!(config.indent_size, Some(4));
+        assert!(!config.indent_size_is_tab);
+    }
+
+    #[test]
+    #[ignore = "known issue: tab_width = unset is parsed as an integer and panics"]
+    fn tab_width_unset_is_case_insensitive() {
+        let config = Config::from_path(Path::new(
+            "../../testdata/tab_width/unset/nested/no_error.target",
+        ))
+        .unwrap();
+
+        assert_eq!(config.tab_width, None);
+        assert!(config.indent_size_is_tab);
+    }
+
+    #[test]
+    #[ignore = "known issue: non-positive tab_width is accepted instead of rejected"]
+    fn tab_width_rejects_zero() {
+        assert!(
+            Config::from_path(Path::new("../../testdata/tab_width/zero/target.target")).is_err()
+        );
+    }
+
+    #[test]
+    #[ignore = "known issue: invalid negative tab_width causes a panic instead of a parse error"]
+    fn tab_width_rejects_negative_value_without_panicking() {
+        let result = std::panic::catch_unwind(|| {
+            Config::from_path(Path::new("../../testdata/tab_width/negative/target.target"))
+        });
+
+        assert!(matches!(result, Ok(Err(_))));
+    }
 }

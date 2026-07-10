@@ -9,6 +9,9 @@ mod max_line_length;
 mod trim_trailing_whitespace;
 
 #[cfg(test)]
+mod tab_width_tests;
+
+#[cfg(test)]
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
