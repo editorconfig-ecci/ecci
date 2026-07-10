@@ -1,13 +1,13 @@
-FROM rust:1-alpine-3.19 AS builder
+FROM rust:1-alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache editorconfig-dev
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs && cargo build --release && rm -f src/main.rs
-
-COPY src ./src
-RUN CARGO_BUILD_INCREMENTAL=true cargo build --release
+COPY crates ./crates
+RUN RUSTFLAGS="-C target-feature=-crt-static -L native=/usr/lib" cargo build --locked --release --package ecci
 
 FROM alpine:3.19 AS runtime
+RUN apk add --no-cache libeditorconfig libgcc
 COPY --from=builder /app/target/release/ecci /usr/local/bin/ecci
 
 FROM runtime AS action
