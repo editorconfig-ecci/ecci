@@ -242,6 +242,46 @@ pushd trim_trailing_whitespace
     echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = true\n" > .editorconfig
     echo -ne "a\nb\nc\n" > no_error.target
     echo -ne "a\nb  \nc\n" > error.target
+
+    [ -d empty_line ] || mkdir -p empty_line
+    pushd empty_line
+        printf 'text\n  \ntext\n' > error.target
+    popd
+
+    [ -d false ] || mkdir -p false
+    pushd false
+        echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = false\n" > .editorconfig
+        printf 'text \n\t\n \t \n' > no_error.target
+    popd
+
+    [ -d uppercase ] || mkdir -p uppercase
+    pushd uppercase
+        echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = TRUE\n" > .editorconfig
+        printf 'text \n' > error.target
+    popd
+
+    [ -d unset ] || mkdir -p unset
+    pushd unset
+        echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = true\n" > .editorconfig
+        [ -d child ] || mkdir -p child
+        pushd child
+            echo -ne "[*.target]\ntrim_trailing_whitespace = unset\n" > .editorconfig
+            printf 'text \n' > no_error.target
+        popd
+    popd
+
+    [ -d specification_regressions ] || mkdir -p specification_regressions
+    pushd specification_regressions
+        echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = true\n" > .editorconfig
+        printf 'space \n\t\n\v\n\302\240\n' > any_whitespace.target
+        printf 'last line has a trailing space ' > final_line.target
+    popd
+
+    [ -d insert_final_newline_interaction ] || mkdir -p insert_final_newline_interaction
+    pushd insert_final_newline_interaction
+        echo -ne "root = true\n[*.target]\ntrim_trailing_whitespace = true\ninsert_final_newline = true\n" > .editorconfig
+        printf 'last line has a trailing space ' > final_line.target
+    popd
 popd
 
 # max_line_length
