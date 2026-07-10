@@ -7,3 +7,4 @@ is not end-user documentation.
 - [Documentation governance](documentation-governance.md)
 - [Binary-file detection](binary-file-detection.md)
 - [CLI diagnostics and GitHub Action](cli-diagnostics-and-github-action.md)
+- [CLI file selection](cli-file-selection.md)
