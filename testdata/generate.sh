@@ -62,6 +62,42 @@ pushd indent_size
         echo -ne "a\n    b\nc\n" > no_error.target
         echo -ne "a\n  b\nc\n" > error_2.target
     popd
+    [ -d case_insensitive ] || mkdir -p case_insensitive
+    pushd case_insensitive
+        echo -ne "root = true\n[*.target]\nindent_style = SPACE\nindent_size = 2\n" > .editorconfig
+        echo -ne "a\n   b\nc\n" > error_3.target
+    popd
+    [ -d one ] || mkdir -p one
+    pushd one
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = 1\n" > .editorconfig
+        echo -ne "a\n b\n       c\n" > no_error.target
+    popd
+    [ -d unset ] || mkdir -p unset
+    pushd unset
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = 2\n[unset.target]\nindent_size = unset\n" > .editorconfig
+        echo -ne "a\n   b\nc\n" > unset.target
+    popd
+    [ -d tab_without_tab_width ] || mkdir -p tab_without_tab_width
+    pushd tab_without_tab_width
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = TAB\n" > .editorconfig
+        echo -ne "a\n    b\nc\n" > no_error.target
+    popd
+    [ -d tab_with_tab_width ] || mkdir -p tab_with_tab_width
+    pushd tab_with_tab_width
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = tab\ntab_width = 4\n" > .editorconfig
+        echo -ne "a\n    b\nc\n" > no_error.target
+        echo -ne "a\n  b\nc\n" > error_2.target
+    popd
+    [ -d invalid_value ] || mkdir -p invalid_value
+    pushd invalid_value
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = invalid\n" > .editorconfig
+        echo -ne "a\n b\nc\n" > invalid.target
+    popd
+    [ -d zero ] || mkdir -p zero
+    pushd zero
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = 0\n" > .editorconfig
+        echo -ne "a\n b\nc\n" > zero.target
+    popd
 popd
 
 # trim_trailing_whitespace
