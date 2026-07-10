@@ -9,7 +9,7 @@ pub fn check_indent_size<T: Output>(
     content: &str,
 ) {
     if let Some(IndentStyle::Space) = config.indent_style {
-        if let Some(size) = config.indent_size {
+        if let Some(size) = config.indent_size.filter(|size| *size > 0) {
             let mut indent = 0;
             for c in content.chars() {
                 if c == ' ' {
@@ -117,7 +117,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known defect: the editorconfig adapter panics when indent_size = unset"]
     fn check_indent_size_unset_disables_inherited_size() {
         let target_path = "../../testdata/indent_size/unset/unset.target";
         let config =
@@ -191,7 +190,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known defect: invalid indent_size makes the editorconfig adapter panic"]
     fn invalid_indent_size_returns_an_error() {
         let target_path = "../../testdata/indent_size/invalid_value/invalid.target";
         let result = ecci_editorconfig::Config::from_path(std::path::Path::new(target_path));
@@ -199,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known defect: indent_size = 0 causes a division-by-zero panic"]
     fn zero_indent_size_does_not_panic() {
         let target_path = "../../testdata/indent_size/zero/zero.target";
         let config =

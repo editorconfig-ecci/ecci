@@ -8,28 +8,31 @@ pub fn check_indent_style<T: Output>(
     line_number: usize,
     content: &str,
 ) {
-    if let Some(IndentStyle::Space) = config.indent_style {
-        if content.starts_with('\t') {
-            output.output(
-                line_number,
-                0,
-                1,
-                &config.path.to_string_lossy(),
-                content,
-                "indent_style",
-            )
+    let invalid_indent_character = match config.indent_style {
+        Some(IndentStyle::Space) => '\t',
+        Some(IndentStyle::Tab) => ' ',
+        None => return,
+    };
+
+    let mut invalid_column = None;
+    for (column, character) in content.char_indices() {
+        if !matches!(character, ' ' | '\t') {
+            break;
         }
-    } else if let Some(IndentStyle::Tab) = config.indent_style {
-        if content.starts_with(' ') {
-            output.output(
-                line_number,
-                0,
-                1,
-                &config.path.to_string_lossy(),
-                content,
-                "indent_style",
-            )
+        if character == invalid_indent_character && invalid_column.is_none() {
+            invalid_column = Some(column);
         }
+    }
+
+    if let Some(column) = invalid_column {
+        output.output(
+            line_number,
+            column,
+            1,
+            &config.path.to_string_lossy(),
+            content,
+            "indent_style",
+        )
     }
 }
 
@@ -143,7 +146,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known defect: checker examines only the first indentation character"]
     fn check_indent_style_rejects_mixed_indentation() {
         for (target_path, expected_content) in [
             (

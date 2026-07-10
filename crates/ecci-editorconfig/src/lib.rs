@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
 #[allow(dead_code, non_camel_case_types)]
@@ -46,27 +47,13 @@ impl Config {
     }
 }
 
-fn invalid_value(property: &str, value: &str) -> std::io::Error {
-    std::io::Error::new(
-        std::io::ErrorKind::InvalidData,
-        format!("invalid {property} value: {value}"),
-    )
-}
-
-fn parse_usize(property: &str, value: &str) -> std::io::Result<usize> {
-    value.parse().map_err(|_| invalid_value(property, value))
-}
-
-fn parse_positive_usize(property: &str, value: &str) -> std::io::Result<usize> {
-    let value = parse_usize(property, value)?;
-    if value == 0 {
-        return Err(invalid_value(property, "0"));
+fn parse_bool(value: &str) -> Option<bool> {
+    match value.to_ascii_lowercase().as_str() {
+        "true" => Some(true),
+        "false" => Some(false),
+        "unset" => None,
+        _ => None,
     }
-    Ok(value)
-}
-
-fn parse_bool(property: &str, value: &str) -> std::io::Result<bool> {
-    value.parse().map_err(|_| invalid_value(property, value))
 }
 
 fn parse_internal(path: &Path) -> std::io::Result<Config> {
@@ -91,6 +78,7 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         let handle = bindings::editorconfig_handle_init();
         bindings::editorconfig_parse(ptr, handle);
         let count = bindings::editorconfig_handle_get_name_value_count(handle);
+        let mut parse_error = None;
         for i in 0..count {
             let mut name: *const i8 = std::ptr::null();
             let mut value: *const i8 = std::ptr::null();
@@ -112,17 +100,44 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                         config.indent_size = None;
                         config.indent_size_is_tab = true;
                     } else {
-                        config.indent_size = Some(parse_usize("indent_size", value)?);
+                        let size = match value.parse() {
+                            Ok(size) => size,
+                            Err(error) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!("invalid indent_size value {value:?}: {error}"),
+                                ));
+                                break;
+                            }
+                        };
+                        config.indent_size = Some(size);
                         config.indent_size_is_tab = false;
                     }
                 }
                 "tab_width" => {
-                    config.tab_width = if value.eq_ignore_ascii_case("unset") {
+                    if value.eq_ignore_ascii_case("unset") {
                         tab_width_was_unset = true;
-                        None
+                        config.tab_width = None;
                     } else {
-                        Some(parse_positive_usize("tab_width", value)?)
-                    };
+                        let width = match value.parse() {
+                            Ok(width) => width,
+                            Err(error) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!("invalid tab_width value {value:?}: {error}"),
+                                ));
+                                break;
+                            }
+                        };
+                        if width == 0 {
+                            parse_error = Some(Error::new(
+                                ErrorKind::InvalidData,
+                                "invalid tab_width value \"0\": must be a positive integer",
+                            ));
+                            break;
+                        }
+                        config.tab_width = Some(width);
+                    }
                 }
                 "end_of_line" => match value {
                     "lf" => config.end_of_line = Some(EndOfLine::LF),
@@ -139,25 +154,17 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "trim_trailing_whitespace" => {
-                    config.trim_trailing_whitespace = if value.eq_ignore_ascii_case("unset") {
-                        None
-                    } else {
-                        Some(parse_bool("trim_trailing_whitespace", value)?)
-                    };
+                    config.trim_trailing_whitespace = parse_bool(value);
                 }
                 "insert_final_newline" => {
-                    config.insert_final_newline = if value.eq_ignore_ascii_case("unset") {
-                        None
-                    } else {
-                        Some(parse_bool("insert_final_newline", value)?)
-                    };
+                    config.insert_final_newline = parse_bool(value);
                 }
                 "max_line_length" => {
-                    config.max_line_length = if value.eq_ignore_ascii_case("unset") {
-                        None
+                    if value.eq_ignore_ascii_case("unset") {
+                        config.max_line_length = None;
                     } else {
-                        Some(parse_usize("max_line_length", value)?)
-                    };
+                        config.max_line_length = Some(value.parse().unwrap());
+                    }
                 }
                 _ => {}
             }
@@ -175,6 +182,9 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         if ret != 0 {
             panic!("Failed to destroy the editorconfig_handle object");
         }
+        if let Some(error) = parse_error {
+            return Err(error);
+        }
     }
     Ok(config)
 }
@@ -182,6 +192,14 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bool_values_are_case_insensitive_and_safe_to_parse() {
+        assert_eq!(parse_bool("TrUe"), Some(true));
+        assert_eq!(parse_bool("FaLsE"), Some(false));
+        assert_eq!(parse_bool("UnSeT"), None);
+        assert_eq!(parse_bool("not-a-bool"), None);
+    }
 
     #[test]
     fn it_works() {
