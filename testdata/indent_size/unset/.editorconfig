@@ -1,0 +1,6 @@
+root = true
+[*.target]
+indent_style = space
+indent_size = 2
+[unset.target]
+indent_size = unset

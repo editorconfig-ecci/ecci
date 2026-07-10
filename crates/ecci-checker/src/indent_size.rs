@@ -95,4 +95,122 @@ mod tests {
             .return_const(());
         check_all(&config, &mut mock).unwrap();
     }
+
+    #[test]
+    fn check_indent_size_is_case_insensitive() {
+        let target_path = "../../testdata/indent_size/case_insensitive/error_3.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .once()
+            .withf(move |line_number, column, length, path, content, rule| {
+                *line_number == 2
+                    && *column == 0
+                    && *length == 3
+                    && path == target_path
+                    && content == "   b\n"
+                    && rule == "indent_size"
+            })
+            .return_const(());
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    #[ignore = "known defect: the editorconfig adapter panics when indent_size = unset"]
+    fn check_indent_size_unset_disables_inherited_size() {
+        let target_path = "../../testdata/indent_size/unset/unset.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.indent_size, None);
+        assert!(!config.indent_size_is_tab);
+
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_tab_without_tab_width_uses_editor_default() {
+        let target_path = "../../testdata/indent_size/tab_without_tab_width/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.indent_size, None);
+        assert!(config.indent_size_is_tab);
+        assert_eq!(config.tab_width, None);
+
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_one_accepts_every_space_indent() {
+        let target_path = "../../testdata/indent_size/one/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.indent_size, Some(1));
+
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_tab_uses_tab_width() {
+        let target_path = "../../testdata/indent_size/tab_with_tab_width/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.indent_size, Some(4));
+        assert!(!config.indent_size_is_tab);
+        assert_eq!(config.tab_width, Some(4));
+
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_tab_with_tab_width_rejects_non_multiple() {
+        let target_path = "../../testdata/indent_size/tab_with_tab_width/error_2.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .once()
+            .withf(move |line_number, column, length, path, content, rule| {
+                *line_number == 2
+                    && *column == 0
+                    && *length == 2
+                    && path == target_path
+                    && content == "  b\n"
+                    && rule == "indent_size"
+            })
+            .return_const(());
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    #[ignore = "known defect: invalid indent_size makes the editorconfig adapter panic"]
+    fn invalid_indent_size_returns_an_error() {
+        let target_path = "../../testdata/indent_size/invalid_value/invalid.target";
+        let result = ecci_editorconfig::Config::from_path(std::path::Path::new(target_path));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    #[ignore = "known defect: indent_size = 0 causes a division-by-zero panic"]
+    fn zero_indent_size_does_not_panic() {
+        let target_path = "../../testdata/indent_size/zero/zero.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.indent_size, Some(0));
+
+        let mut mock = MockOutput::new();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            check_all(&config, &mut mock)
+        }));
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_ok());
+    }
 }

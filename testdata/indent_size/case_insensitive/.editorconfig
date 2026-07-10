@@ -1,0 +1,4 @@
+root = true
+[*.target]
+indent_style = SPACE
+indent_size = 2
