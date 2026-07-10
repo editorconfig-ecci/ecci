@@ -46,6 +46,29 @@ impl Config {
     }
 }
 
+fn invalid_value(property: &str, value: &str) -> std::io::Error {
+    std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!("invalid {property} value: {value}"),
+    )
+}
+
+fn parse_usize(property: &str, value: &str) -> std::io::Result<usize> {
+    value.parse().map_err(|_| invalid_value(property, value))
+}
+
+fn parse_positive_usize(property: &str, value: &str) -> std::io::Result<usize> {
+    let value = parse_usize(property, value)?;
+    if value == 0 {
+        return Err(invalid_value(property, "0"));
+    }
+    Ok(value)
+}
+
+fn parse_bool(property: &str, value: &str) -> std::io::Result<bool> {
+    value.parse().map_err(|_| invalid_value(property, value))
+}
+
 fn parse_internal(path: &Path) -> std::io::Result<Config> {
     let canonical = path.canonicalize()?;
     let c_string = CString::new(canonical.to_str().unwrap()).unwrap();
@@ -62,6 +85,8 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         insert_final_newline: None,
         max_line_length: None,
     };
+    let mut indent_size_was_unset = false;
+    let mut tab_width_was_unset = false;
     unsafe {
         let handle = bindings::editorconfig_handle_init();
         bindings::editorconfig_parse(ptr, handle);
@@ -79,14 +104,25 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "indent_size" => {
-                    if value == "tab" {
+                    if value.eq_ignore_ascii_case("unset") {
+                        config.indent_size = None;
+                        config.indent_size_is_tab = false;
+                        indent_size_was_unset = true;
+                    } else if value.eq_ignore_ascii_case("tab") {
+                        config.indent_size = None;
                         config.indent_size_is_tab = true;
                     } else {
-                        config.indent_size = Some(value.parse().unwrap());
+                        config.indent_size = Some(parse_usize("indent_size", value)?);
+                        config.indent_size_is_tab = false;
                     }
                 }
                 "tab_width" => {
-                    config.tab_width = Some(value.parse().unwrap());
+                    config.tab_width = if value.eq_ignore_ascii_case("unset") {
+                        tab_width_was_unset = true;
+                        None
+                    } else {
+                        Some(parse_positive_usize("tab_width", value)?)
+                    };
                 }
                 "end_of_line" => match value {
                     "lf" => config.end_of_line = Some(EndOfLine::LF),
@@ -103,16 +139,37 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "trim_trailing_whitespace" => {
-                    config.trim_trailing_whitespace = Some(value.parse().unwrap());
+                    config.trim_trailing_whitespace = if value.eq_ignore_ascii_case("unset") {
+                        None
+                    } else {
+                        Some(parse_bool("trim_trailing_whitespace", value)?)
+                    };
                 }
                 "insert_final_newline" => {
-                    config.insert_final_newline = Some(value.parse().unwrap());
+                    config.insert_final_newline = if value.eq_ignore_ascii_case("unset") {
+                        None
+                    } else {
+                        Some(parse_bool("insert_final_newline", value)?)
+                    };
                 }
                 "max_line_length" => {
-                    config.max_line_length = Some(value.parse().unwrap());
+                    config.max_line_length = if value.eq_ignore_ascii_case("unset") {
+                        None
+                    } else {
+                        Some(parse_usize("max_line_length", value)?)
+                    };
                 }
                 _ => {}
             }
+        }
+        // libeditorconfig resolves `indent_size = tab` through `tab_width` and
+        // reports the resolved value as `unset` when a nested section unsets
+        // tab_width. Keep the original tab-based indent semantics in that case.
+        if indent_size_was_unset
+            && tab_width_was_unset
+            && config.indent_style == Some(IndentStyle::Tab)
+        {
+            config.indent_size_is_tab = true;
         }
         let ret = bindings::editorconfig_handle_destroy(handle);
         if ret != 0 {
@@ -173,7 +230,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: tab_width = unset is parsed as an integer and panics"]
     fn tab_width_unset_is_case_insensitive() {
         let config = Config::from_path(Path::new(
             "../../testdata/tab_width/unset/nested/no_error.target",
@@ -185,7 +241,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: non-positive tab_width is accepted instead of rejected"]
     fn tab_width_rejects_zero() {
         assert!(
             Config::from_path(Path::new("../../testdata/tab_width/zero/target.target")).is_err()
@@ -193,10 +248,20 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: invalid negative tab_width causes a panic instead of a parse error"]
     fn tab_width_rejects_negative_value_without_panicking() {
         let result = std::panic::catch_unwind(|| {
             Config::from_path(Path::new("../../testdata/tab_width/negative/target.target"))
+        });
+
+        assert!(matches!(result, Ok(Err(_))));
+    }
+
+    #[test]
+    fn tab_width_rejects_non_numeric_value_without_panicking() {
+        let result = std::panic::catch_unwind(|| {
+            Config::from_path(Path::new(
+                "../../testdata/tab_width/non_numeric/target.target",
+            ))
         });
 
         assert!(matches!(result, Ok(Err(_))));
