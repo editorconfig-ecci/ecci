@@ -175,11 +175,52 @@ popd
 # max_line_length
 [ -d max_line_length ] || mkdir -p max_line_length
 pushd max_line_length
+    [ -d 1 ] || mkdir -p 1
+    pushd 1
+        echo -ne "root = true\n[*.target]\nmax_line_length = 1\n" > .editorconfig
+        echo -ne "a\n\n" > no_error.target
+        echo -ne "ab\n" > error.target
+    popd
     [ -d 10 ] || mkdir -p 10
     pushd 10
         echo -ne "root = true\n[*.target]\nmax_line_length = 10\n" > .editorconfig
         echo -ne "a\nbbbbbbbbbb\nc\n" > no_error.target
         echo -ne "a\nbbbbbbbbbbbb\nc\n" > error.target
+    popd
+    [ -d tabs ] || mkdir -p tabs
+    pushd tabs
+        echo -ne "root = true\n[*.target]\nmax_line_length = 4\n" > .editorconfig
+        echo -ne "\\t\\t\\t\\t\n" > no_error.target
+        echo -ne "\\t\\t\\t\\t\\t\n" > error.target
+    popd
+    [ -d multibyte ] || mkdir -p multibyte
+    pushd multibyte
+        echo -ne "root = true\n[*.target]\nmax_line_length = 5\n" > .editorconfig
+        echo -ne "あいうえお\n" > no_error.target
+        echo -ne "あいうえおか\n" > error.target
+    popd
+    [ -d crlf ] || mkdir -p crlf
+    pushd crlf
+        echo -ne "root = true\n[*.target]\nend_of_line = crlf\nmax_line_length = 4\n" > .editorconfig
+        echo -ne "aaaa\\r\\n" > no_error.target
+        echo -ne "aaaaa\\r\\n" > error.target
+    popd
+    [ -d unset ] || mkdir -p unset
+    pushd unset
+        echo -ne "root = true\n[*.target]\nmax_line_length = 1\n" > .editorconfig
+        [ -d child ] || mkdir -p child
+        pushd child
+            echo -ne "[*.target]\nmax_line_length = UNSET\n" > .editorconfig
+            echo -ne "this line is deliberately longer than one character\n" > no_error.target
+        popd
+    popd
+    [ -d invalid ] || mkdir -p invalid
+    pushd invalid
+        for value in 0 -1 1.5 invalid; do
+            [ -d "$value" ] || mkdir -p -- "$value"
+            echo -ne "root = true\n[*.target]\nmax_line_length = $value\n" > "$value/.editorconfig"
+            echo -ne "a\n" > "$value/target.target"
+        done
     popd
 popd
 
