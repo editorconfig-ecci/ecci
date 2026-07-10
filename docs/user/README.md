@@ -7,5 +7,5 @@ Add a focused page here when a user-facing feature needs explanation. Link that
 page from this index and, when it is a primary entry point, from the repository
 [README](../../README.md).
 
-For the current command-line prototype, see the [basic usage instructions in
-the README](../../README.md#basic-usage).
+- [CLI usage](cli.md) explains the current prototype, configuration discovery,
+  implemented checks, exit behavior, and roadmap.

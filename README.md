@@ -1,30 +1,41 @@
 # ecci
 
-`ecci` is a Rust-based checker for whether files conform to their applicable
-`.editorconfig` settings. It is also packaged as a Docker-based GitHub Action.
+`ecci` is the end-user command-line interface (CLI) for checking files and
+directories against their applicable [EditorConfig](https://editorconfig.org/)
+settings.
 
 ## Installation
 
-Install a Rust toolchain, clone this repository, and build the workspace:
+Building from source requires a current stable
+[Rust toolchain](https://www.rust-lang.org/tools/install) with Cargo and the
+EditorConfig Core C development library (`libeditorconfig`). On Debian or
+Ubuntu, install it with `sudo apt-get install libeditorconfig-dev`; on Alpine,
+use `apk add editorconfig-dev`.
+
+Then clone the repository and build the CLI:
 
 ```sh
-cargo build --workspace
+git clone https://github.com/editorconfig-ecci/ecci.git
+cd ecci
+cargo build --release --package ecci
 ```
 
 ## Basic usage
 
-Run the current command-line prototype from the repository root:
+Run the current CLI prototype from the repository root:
 
 ```sh
 cargo run --package ecci
 ```
 
-The prototype currently reads the `.editorconfig` configuration for
-`Cargo.toml` and prints its resolved indentation style.
+The prototype currently resolves the `.editorconfig` settings for `Cargo.toml`
+and prints its indentation style. It does not yet accept path arguments or
+report conformance results.
 
 ## Documentation
 
-- [User documentation](docs/user/README.md)
+- [CLI usage, configuration, checks, and roadmap](docs/user/cli.md)
+- [Development and testing](docs/development/README.md)
 - [Technical design documentation](docs/design/README.md)
-- [Development documentation](docs/development/README.md)
 - [Documentation governance](docs/design/documentation-governance.md)
+- [MIT License](LICENSE)
