@@ -386,6 +386,7 @@ pushd insert_final_newline
         pushd cr
             echo -ne "root = true\n[*.target]\nend_of_line = cr\ninsert_final_newline = true\n" > .editorconfig
             echo -ne "a\rb\r" > no_error.target
+            echo -ne "a\nb\n" > mismatched_lf.target
         popd
     popd
 popd

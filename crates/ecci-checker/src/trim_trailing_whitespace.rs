@@ -108,7 +108,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "documents failure to handle unset in the EditorConfig parser"]
     fn check_trim_trailing_whitespace_unset_removes_inherited_effect() {
         let target_path = "../../testdata/trim_trailing_whitespace/unset/child/no_error.target";
         let config =
