@@ -1,5 +1,5 @@
 use ecci_editorconfig::*;
-use std::io::BufRead;
+use std::io::{BufRead, Read};
 mod charset;
 mod end_of_line;
 mod indent_size;
@@ -37,7 +37,6 @@ fn check_line<T: Output>(
     indent_style::check_indent_style(config, output, line_number, content);
     indent_size::check_indent_size(config, output, line_number, content);
     end_of_line::check_end_of_line(config, output, line_number, content);
-    charset::check_charset(config, output, line_number, content);
     trim_trailing_whitespace::check_trim_trailing_whitespace(config, output, line_number, content);
     insert_final_newline::check_insert_final_newline(
         config,
@@ -55,10 +54,21 @@ pub fn check_all<T: Output>(config: &Config, output: &mut T) -> std::io::Result<
     // output.output(1, 0, 5, "test.txt", "WRONG test", "testrule");
 
     // real implementation
-    let file = std::fs::File::open(&config.path)?;
-    let filesize = file.metadata()?.len();
-    let mut readsize = 0u64;
-    let mut reader = std::io::BufReader::new(file);
+    let mut bytes = Vec::new();
+    std::fs::File::open(&config.path)?.read_to_end(&mut bytes)?;
+    charset::check_charset(config, output, &bytes);
+
+    // The line-oriented checks operate on `str`.  Do not let a file encoded as
+    // Latin-1 or UTF-16 (or a malformed UTF-8 file) make them panic.  A charset
+    // mismatch has already been reported above; when decoding is impossible we
+    // cannot reliably report line/column based diagnostics, so skip those checks.
+    let Some(content) = charset::decode_for_line_checks(config, &bytes) else {
+        return Ok(());
+    };
+
+    let filesize = content.len();
+    let mut readsize = 0usize;
+    let mut reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes()));
     let mut line_number = 0usize;
     let mut buf = Vec::new();
 
@@ -71,13 +81,14 @@ pub fn check_all<T: Output>(config: &Config, output: &mut T) -> std::io::Result<
 
     while reader.read_until(eol, &mut buf).unwrap() > 0 {
         line_number += 1;
-        readsize += buf.len() as u64;
+        readsize += buf.len();
         let has_next_line = readsize < filesize;
         check_line(
             config,
             output,
             line_number,
-            std::str::from_utf8(&buf).unwrap(),
+            // `content` was decoded before constructing the reader.
+            std::str::from_utf8(&buf).expect("line came from valid UTF-8 content"),
             has_next_line,
         );
         buf.clear();
