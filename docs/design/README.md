@@ -5,3 +5,4 @@ invariants, implementation rationale, and cross-cutting technical behavior. It
 is not end-user documentation.
 
 - [Documentation governance](documentation-governance.md)
+- [Binary-file detection](binary-file-detection.md)
