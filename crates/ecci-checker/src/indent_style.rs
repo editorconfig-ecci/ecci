@@ -68,6 +68,16 @@ mod tests {
     }
 
     #[test]
+    fn check_indent_style_space_unindented() {
+        let target_path = "../../testdata/indent_style/space/unindented.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
     fn check_indent_style_tab() {
         let target_path = "../../testdata/indent_style/tab/no_error.target";
         let config =
@@ -95,5 +105,71 @@ mod tests {
             .times(1)
             .return_const(());
         check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_style_tab_unindented() {
+        let target_path = "../../testdata/indent_style/tab/unindented.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_style_is_case_insensitive() {
+        for target_path in [
+            "../../testdata/indent_style/case_insensitive/space/no_error.target",
+            "../../testdata/indent_style/case_insensitive/tab/no_error.target",
+        ] {
+            let config =
+                ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+            let mut mock = MockOutput::new();
+            mock.expect_output().never();
+            check_all(&config, &mut mock).unwrap();
+        }
+    }
+
+    #[test]
+    fn check_indent_style_unset_disables_inherited_rule() {
+        let target_path = "../../testdata/indent_style/unset/nested/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert!(config.indent_style.is_none());
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    #[ignore = "known defect: checker examines only the first indentation character"]
+    fn check_indent_style_rejects_mixed_indentation() {
+        for (target_path, expected_content) in [
+            (
+                "../../testdata/indent_style/space/error_mixed_tab.target",
+                " \tb\n",
+            ),
+            (
+                "../../testdata/indent_style/tab/error_mixed_space.target",
+                "\t b\n",
+            ),
+        ] {
+            let config =
+                ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+            let mut mock = MockOutput::new();
+            mock.expect_output()
+                .withf(move |line_number, column, length, path, content, rule| {
+                    *line_number == 2
+                        && *column == 1
+                        && *length == 1
+                        && path == target_path
+                        && content == expected_content
+                        && rule == "indent_style"
+                })
+                .once()
+                .return_const(());
+            check_all(&config, &mut mock).unwrap();
+        }
     }
 }

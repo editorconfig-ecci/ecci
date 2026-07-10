@@ -37,13 +37,39 @@ pushd indent_style
     pushd space
         echo -ne "root = true\n[*.target]\nindent_style = space\n" > .editorconfig
         echo -ne "a\n  b\nc\n" > no_error.target
+        echo -ne "a\nb\nc\n" > unindented.target
         echo -ne "a\n\t\tb\nc\n" > error_tab.target
+        echo -ne "a\n \tb\nc\n" > error_mixed_tab.target
     popd
     [ -d tab ] || mkdir -p tab
     pushd tab
         echo -ne "root = true\n[*.target]\nindent_style = tab\n" > .editorconfig
         echo -ne "a\n\t\tb\nc\n" > no_error.target
+        echo -ne "a\nb\nc\n" > unindented.target
         echo -ne "a\n  b\nc\n" > error_space.target
+        echo -ne "a\n\t b\nc\n" > error_mixed_space.target
+    popd
+    [ -d case_insensitive ] || mkdir -p case_insensitive
+    pushd case_insensitive
+        [ -d space ] || mkdir -p space
+        pushd space
+            echo -ne "root = true\n[*.target]\nindent_style = SPACE\n" > .editorconfig
+            echo -ne "a\n  b\nc\n" > no_error.target
+        popd
+        [ -d tab ] || mkdir -p tab
+        pushd tab
+            echo -ne "root = true\n[*.target]\nindent_style = TAB\n" > .editorconfig
+            echo -ne "a\n\t\tb\nc\n" > no_error.target
+        popd
+    popd
+    [ -d unset ] || mkdir -p unset
+    pushd unset
+        echo -ne "root = true\n[*.target]\nindent_style = tab\n" > .editorconfig
+        [ -d nested ] || mkdir -p nested
+        pushd nested
+            echo -ne "[*.target]\nindent_style = unset\n" > .editorconfig
+            echo -ne "  a\n\tb\nc\n" > no_error.target
+        popd
     popd
 popd
 
