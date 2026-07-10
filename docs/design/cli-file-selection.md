@@ -8,9 +8,10 @@ for a future CLI implementation; it does not describe the current prototype.
 
 The design keeps project-owned exclusion rules deterministic while preserving
 the useful command-line convention that an explicitly named file is checked.
-It also separates file selection from result presentation. The output-format
-design owns the formats and field names, but must be able to render the
-selection outcomes defined here for both people and programs.
+It integrates with the typed reporting and exit-status contract in
+[CLI diagnostics and GitHub Action](cli-diagnostics-and-github-action.md).
+That document owns rendered diagnostics, report fields, and final process
+status; this document supplies the selection outcomes that it reports.
 
 ## Decisions and behavior
 
@@ -47,21 +48,25 @@ are deliberately not read. Therefore, the selection result does not vary with
 per-clone or per-user Git configuration.
 
 `.ecciignore` is discovered and applied hierarchically in the same way as
-`.gitignore`. It uses the same pattern syntax, including negated patterns that
-re-include a path previously excluded by an applicable `.ecciignore` rule.
-`.ecciignore` is the only explicit project-level include/exclude mechanism;
-the CLI does not provide `--include` or `--exclude` options.
+`.gitignore`. It uses the same pattern syntax, including negated patterns. Its
+rules have higher precedence than `.gitignore` rules. A final negated
+`.ecciignore` match is a force-check rule: it re-includes a regular file and
+also prevents binary-file exclusion. The `.ecciignore` file itself is never
+checked. `.ecciignore` is the only explicit project-level include/exclude
+mechanism; the CLI does not provide `--include` or `--exclude` options.
 
 For a discovered file, selection proceeds in this order:
 
 1. Skip symbolic links.
-2. Apply `.gitignore`; a matching exclusion skips the file and prevents
-   `.ecciignore` from re-including it.
-3. Apply `.ecciignore`; its negated patterns can re-include only paths that
-   were excluded by `.ecciignore`.
+2. Apply `.gitignore` and `.ecciignore`; the final applicable `.ecciignore`
+   rule takes precedence over `.gitignore`.
+3. Skip an excluded file unless a final negated `.ecciignore` rule re-includes
+   it.
 4. Resolve the file's applicable `.editorconfig` configuration.
-5. Skip the file when no `.editorconfig` applies; otherwise, submit it to the
-   checker.
+5. Skip the file when no `.editorconfig` applies; otherwise, classify its
+   content according to [Binary-file detection](binary-file-detection.md).
+6. Skip a binary file unless a final negated `.ecciignore` rule force-selects
+   it; submit the remaining file to the checker.
 
 A direct file bypasses both ignore mechanisms and is submitted to
 EditorConfig resolution even if `.gitignore` or `.ecciignore` would exclude
@@ -79,12 +84,13 @@ or read a candidate file is an operational error. The CLI continues with other
 independent entries and arguments after recording an operational error. A
 missing applicable `.editorconfig` is not an error: it is an intentional skip.
 
-The selection layer must emit a structured outcome for every file or path it
+The selection layer must retain a structured outcome for every file or path it
 does not submit to checking. At minimum, outcomes distinguish:
 
 - `gitignore` exclusion;
 - `.ecciignore` exclusion;
 - no applicable `.editorconfig`;
+- binary-file exclusion;
 - symbolic link encountered during traversal;
 - direct-file ignore override;
 - nonexistent or unsupported direct path;
@@ -92,27 +98,19 @@ does not submit to checking. At minimum, outcomes distinguish:
 - filesystem or permission error.
 
 An outcome includes the affected path and, for errors, enough diagnostic
-detail to identify the failing operation. The output layer decides the textual
-and machine-readable representation, but must expose these same reason
-categories. In particular, it must support a human-readable diagnostic for
-operational errors and a machine-readable representation of selection
-decisions. Presentation defaults, verbosity controls, and serialization
-schemas are outside this design.
+detail to identify the failing operation. The reporting contract maps
+intentional skips to `ECCI-SKIP` diagnostics when skips are shown and maps
+operational errors to `ECCI-IO`. It defines the human-readable text format,
+summary, and future machine-readable formats.
 
 ### Exit status
 
-The CLI determines its final status after processing every possible argument.
-
-| Status | Meaning |
-| --- | --- |
-| `0` | No check violations and no operational errors. |
-| `1` | One or more check violations, with no usage or operational error. |
-| `2` | One or more operational errors. |
-| `3` | Invalid CLI syntax or usage. |
-
-When several categories occur, precedence is `3`, then `2`, then `1`, then
-`0`. Thus, an unreadable subtree produces status `2` even when another file
-also violates its EditorConfig settings.
+The selection layer records its outcomes and does not assign an aggregate exit
+status independently. The shared [exit-status contract](cli-diagnostics-and-github-action.md#exit-status-contract)
+applies: an invalid CLI option is a configuration error (`2`), while a missing
+explicit path or traversal/read failure is an I/O error (`3`). Either execution
+error takes precedence over check violations (`1`), and intentional skips do
+not fail an otherwise successful invocation (`0`).
 
 ## Alternatives considered
 
@@ -134,17 +132,17 @@ covered by automated CLI or selection-layer tests.
 | Area | Scenarios |
 | --- | --- |
 | `.gitignore` | Root and nested files apply relative patterns; a nested rule overrides a parent rule; `.git/info/exclude` and global excludes do not affect results. |
-| `.ecciignore` | Root and nested files apply hierarchically; negation re-includes a path excluded by `.ecciignore`; it cannot re-include a Git-ignored path. |
+| `.ecciignore` | Root and nested files apply hierarchically; its rules take precedence over `.gitignore`; a final negated rule re-includes a regular file and force-selects it for binary detection. |
 | Direct paths | A direct ignored regular file is selected; a direct directory honors ignore files; missing, unsupported, and broken-link paths are operational errors while later arguments continue. |
 | Filesystem traversal | Hidden files are candidates; traversal skips file and directory symlinks; a direct symlink to a regular file is checked; duplicate inputs do not produce duplicate checks. |
-| EditorConfig | A file with applicable configuration reaches the checker; a file with no applicable `.editorconfig` is skipped with the correct reason. |
+| EditorConfig and binary detection | A file with applicable configuration reaches binary detection and then the checker; a file with no applicable `.editorconfig` is skipped with the correct reason; binary selection follows the binary-file design. |
 | Reporting | Every skip and error has its required reason category and path; errors contain operation detail for presentation by the output layer. |
-| Exit status | Test each individual status and combinations proving `3 > 2 > 1 > 0` precedence. |
+| Exit status | Test selection errors through the shared contract: CLI configuration error `2`, I/O error `3`, violation `1`, and intentional skips `0`; execution errors take precedence over violations. |
 
 ## Unresolved related work
 
-The output-format task will decide the supported human-readable and
-machine-readable formats, stable field names, verbosity controls, and whether
-individual skip outcomes are shown by default. It must preserve the selection
-reason categories and error details required by this document. No other file
-selection behavior is intentionally left undecided.
+The [CLI diagnostics and GitHub Action](cli-diagnostics-and-github-action.md)
+design defers JSON/SARIF schemas and skip-presentation defaults. Those choices
+must preserve the selection reason categories and error details required by
+this document. No other file-selection behavior is intentionally left
+undecided.
