@@ -9,4 +9,4 @@ edition = "2021"
 ecci-editorconfig = { version = "0.0.0", path = "../ecci-editorconfig" }
 
 [dev-dependencies]
-mockall = "0.12.1"
+mockall = "0.13.0"
