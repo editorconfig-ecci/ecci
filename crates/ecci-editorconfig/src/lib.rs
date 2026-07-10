@@ -1,4 +1,5 @@
 use std::ffi::CString;
+use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
 #[allow(dead_code, non_camel_case_types)]
@@ -75,6 +76,7 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         let handle = bindings::editorconfig_handle_init();
         bindings::editorconfig_parse(ptr, handle);
         let count = bindings::editorconfig_handle_get_name_value_count(handle);
+        let mut parse_error = None;
         for i in 0..count {
             let mut name: *const i8 = std::ptr::null();
             let mut value: *const i8 = std::ptr::null();
@@ -88,14 +90,43 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "indent_size" => {
-                    if value == "tab" {
+                    if value == "unset" {
+                        config.indent_size = None;
+                        config.indent_size_is_tab = false;
+                    } else if value == "tab" {
+                        config.indent_size = None;
                         config.indent_size_is_tab = true;
                     } else {
-                        config.indent_size = Some(value.parse().unwrap());
+                        let size = match value.parse() {
+                            Ok(size) => size,
+                            Err(error) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!("invalid indent_size value {value:?}: {error}"),
+                                ));
+                                break;
+                            }
+                        };
+                        config.indent_size = Some(size);
+                        config.indent_size_is_tab = false;
                     }
                 }
                 "tab_width" => {
-                    config.tab_width = Some(value.parse().unwrap());
+                    if value == "unset" {
+                        config.tab_width = None;
+                    } else {
+                        let width = match value.parse() {
+                            Ok(width) => width,
+                            Err(error) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!("invalid tab_width value {value:?}: {error}"),
+                                ));
+                                break;
+                            }
+                        };
+                        config.tab_width = Some(width);
+                    }
                 }
                 "end_of_line" => match value {
                     "lf" => config.end_of_line = Some(EndOfLine::LF),
@@ -130,6 +161,9 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         let ret = bindings::editorconfig_handle_destroy(handle);
         if ret != 0 {
             panic!("Failed to destroy the editorconfig_handle object");
+        }
+        if let Some(error) = parse_error {
+            return Err(error);
         }
     }
     Ok(config)
