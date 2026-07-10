@@ -21,7 +21,6 @@ fn tab_width_with_indent_size_tab_accepts_tab_indentation() {
 }
 
 #[test]
-#[ignore = "known issue: tab_width = unset panics in ecci-editorconfig before checking"]
 fn unset_tab_width_is_not_enforced() {
     let target_path = "../../testdata/tab_width/unset/nested/no_error.target";
     let config = ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();

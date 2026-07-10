@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.21
           cache: false
@@ -28,7 +28,7 @@ jobs:
       #   run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
 
       - name: Checkout Actions Lint fork
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: kounoike/actionlint
           ref: inline-ignore
