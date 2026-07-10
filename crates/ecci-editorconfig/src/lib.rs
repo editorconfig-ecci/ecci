@@ -46,6 +46,15 @@ impl Config {
     }
 }
 
+fn parse_bool(value: &str) -> Option<bool> {
+    match value.to_ascii_lowercase().as_str() {
+        "true" => Some(true),
+        "false" => Some(false),
+        "unset" => None,
+        _ => None,
+    }
+}
+
 fn parse_internal(path: &Path) -> std::io::Result<Config> {
     let canonical = path.canonicalize()?;
     let c_string = CString::new(canonical.to_str().unwrap()).unwrap();
@@ -103,10 +112,10 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "trim_trailing_whitespace" => {
-                    config.trim_trailing_whitespace = Some(value.parse().unwrap());
+                    config.trim_trailing_whitespace = parse_bool(value);
                 }
                 "insert_final_newline" => {
-                    config.insert_final_newline = Some(value.parse().unwrap());
+                    config.insert_final_newline = parse_bool(value);
                 }
                 "max_line_length" => {
                     config.max_line_length = Some(value.parse().unwrap());
@@ -125,6 +134,14 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bool_values_are_case_insensitive_and_safe_to_parse() {
+        assert_eq!(parse_bool("TrUe"), Some(true));
+        assert_eq!(parse_bool("FaLsE"), Some(false));
+        assert_eq!(parse_bool("UnSeT"), None);
+        assert_eq!(parse_bool("not-a-bool"), None);
+    }
 
     #[test]
     fn it_works() {
