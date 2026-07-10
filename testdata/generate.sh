@@ -91,10 +91,48 @@ pushd insert_final_newline
         echo -ne "root = true\n[*.target]\ninsert_final_newline = true\n" > .editorconfig
         echo -ne "a\nb\nc\n" > no_error.target
         echo -ne "a\nb\nc" > error.target
+        echo -ne "a\n" > single_line_no_error.target
+        echo -ne "a" > single_line_error.target
     popd
     [ -d false ] || mkdir -p false
     pushd false
         echo -ne "root = true\n[*.target]\ninsert_final_newline = false\n" > .editorconfig
         echo -ne "a\nb\nc" > no_error.target
+        echo -ne "a\nb\nc\n" > final_newline_no_error.target
+    popd
+    [ -d empty ] || mkdir -p empty
+    pushd empty
+        echo -ne "root = true\n[*.target]\ninsert_final_newline = true\n" > .editorconfig
+        : > no_error.target
+    popd
+    [ -d unset ] || mkdir -p unset
+    pushd unset
+        echo -ne "root = true\n[*.target]\ninsert_final_newline = true\n" > .editorconfig
+        mkdir -p child
+        echo -ne "[*.target]\ninsert_final_newline = unset\n" > child/.editorconfig
+        echo -ne "a" > child/no_error.target
+    popd
+    [ -d uppercase_true ] || mkdir -p uppercase_true
+    pushd uppercase_true
+        echo -ne "root = true\n[*.target]\ninsert_final_newline = TRUE\n" > .editorconfig
+        echo -ne "a" > error.target
+    popd
+    [ -d end_of_line ] || mkdir -p end_of_line
+    pushd end_of_line
+        [ -d lf ] || mkdir -p lf
+        pushd lf
+            echo -ne "root = true\n[*.target]\nend_of_line = lf\ninsert_final_newline = true\n" > .editorconfig
+            echo -ne "a\nb\n" > no_error.target
+        popd
+        [ -d crlf ] || mkdir -p crlf
+        pushd crlf
+            echo -ne "root = true\n[*.target]\nend_of_line = crlf\ninsert_final_newline = true\n" > .editorconfig
+            echo -ne "a\r\nb\r\n" > no_error.target
+        popd
+        [ -d cr ] || mkdir -p cr
+        pushd cr
+            echo -ne "root = true\n[*.target]\nend_of_line = cr\ninsert_final_newline = true\n" > .editorconfig
+            echo -ne "a\rb\r" > no_error.target
+        popd
     popd
 popd
