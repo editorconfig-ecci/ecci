@@ -234,6 +234,11 @@ pushd tab_width
         echo -ne "root = true\n[*.target]\ntab_width = -1\n" > .editorconfig
         echo -ne "root\n" > target.target
     popd
+    [ -d non_numeric ] || mkdir -p non_numeric
+    pushd non_numeric
+        echo -ne "root = true\n[*.target]\ntab_width = invalid\n" > .editorconfig
+        echo -ne "root\n" > target.target
+    popd
 popd
 
 # trim_trailing_whitespace

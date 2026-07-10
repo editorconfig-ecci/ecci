@@ -72,6 +72,8 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         insert_final_newline: None,
         max_line_length: None,
     };
+    let mut indent_size_was_unset = false;
+    let mut tab_width_was_unset = false;
     unsafe {
         let handle = bindings::editorconfig_handle_init();
         bindings::editorconfig_parse(ptr, handle);
@@ -90,10 +92,11 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     _ => {}
                 },
                 "indent_size" => {
-                    if value == "unset" {
+                    if value.eq_ignore_ascii_case("unset") {
                         config.indent_size = None;
                         config.indent_size_is_tab = false;
-                    } else if value == "tab" {
+                        indent_size_was_unset = true;
+                    } else if value.eq_ignore_ascii_case("tab") {
                         config.indent_size = None;
                         config.indent_size_is_tab = true;
                     } else {
@@ -112,7 +115,8 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     }
                 }
                 "tab_width" => {
-                    if value == "unset" {
+                    if value.eq_ignore_ascii_case("unset") {
+                        tab_width_was_unset = true;
                         config.tab_width = None;
                     } else {
                         let width = match value.parse() {
@@ -125,6 +129,13 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                                 break;
                             }
                         };
+                        if width == 0 {
+                            parse_error = Some(Error::new(
+                                ErrorKind::InvalidData,
+                                "invalid tab_width value \"0\": must be a positive integer",
+                            ));
+                            break;
+                        }
                         config.tab_width = Some(width);
                     }
                 }
@@ -158,6 +169,15 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                 _ => {}
             }
         }
+        // libeditorconfig resolves `indent_size = tab` through `tab_width` and
+        // reports the resolved value as `unset` when a nested section unsets
+        // tab_width. Keep the original tab-based indent semantics in that case.
+        if indent_size_was_unset
+            && tab_width_was_unset
+            && config.indent_style == Some(IndentStyle::Tab)
+        {
+            config.indent_size_is_tab = true;
+        }
         let ret = bindings::editorconfig_handle_destroy(handle);
         if ret != 0 {
             panic!("Failed to destroy the editorconfig_handle object");
@@ -167,16 +187,6 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         }
     }
     Ok(config)
-}
-
-fn parse_bool(value: &str) -> Option<bool> {
-    if value.eq_ignore_ascii_case("true") {
-        Some(true)
-    } else if value.eq_ignore_ascii_case("false") {
-        Some(false)
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
@@ -238,7 +248,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: tab_width = unset is parsed as an integer and panics"]
     fn tab_width_unset_is_case_insensitive() {
         let config = Config::from_path(Path::new(
             "../../testdata/tab_width/unset/nested/no_error.target",
@@ -250,7 +259,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: non-positive tab_width is accepted instead of rejected"]
     fn tab_width_rejects_zero() {
         assert!(
             Config::from_path(Path::new("../../testdata/tab_width/zero/target.target")).is_err()
@@ -258,10 +266,20 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known issue: invalid negative tab_width causes a panic instead of a parse error"]
     fn tab_width_rejects_negative_value_without_panicking() {
         let result = std::panic::catch_unwind(|| {
             Config::from_path(Path::new("../../testdata/tab_width/negative/target.target"))
+        });
+
+        assert!(matches!(result, Ok(Err(_))));
+    }
+
+    #[test]
+    fn tab_width_rejects_non_numeric_value_without_panicking() {
+        let result = std::panic::catch_unwind(|| {
+            Config::from_path(Path::new(
+                "../../testdata/tab_width/non_numeric/target.target",
+            ))
         });
 
         assert!(matches!(result, Ok(Err(_))));
