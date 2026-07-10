@@ -74,6 +74,38 @@ pub fn check_end_of_line<T: Output>(
 mod tests {
     use crate::{check_all, MockOutput};
 
+    struct RecordingOutput {
+        rules: Vec<String>,
+    }
+
+    impl RecordingOutput {
+        fn new() -> Self {
+            Self { rules: Vec::new() }
+        }
+    }
+
+    impl crate::Output for RecordingOutput {
+        fn output(
+            &mut self,
+            _line_number: usize,
+            _start: usize,
+            _length: usize,
+            _path: &str,
+            _content: &str,
+            rule: &str,
+        ) {
+            self.rules.push(rule.to_owned());
+        }
+    }
+
+    fn eol_rules(target_path: &str) -> Vec<String> {
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut output = RecordingOutput::new();
+        check_all(&config, &mut output).unwrap();
+        output.rules
+    }
+
     #[test]
     fn check_eol_lf_no_error() {
         let target_path = "../../testdata/end_of_line/lf/no_error.target";
@@ -410,5 +442,51 @@ mod tests {
         //     })
         //     .return_const(());
         check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_eol_lf_reports_every_non_lf_terminator_in_mixed_file() {
+        assert_eq!(
+            eol_rules("../../testdata/end_of_line/lf_mixed/error_mixed.target"),
+            vec!["end_of_line", "end_of_line"]
+        );
+    }
+
+    #[test]
+    fn check_eol_accepts_case_insensitive_value() {
+        let target_path = "../../testdata/end_of_line/lf_uppercase/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.end_of_line, Some(ecci_editorconfig::EndOfLine::LF));
+        assert!(eol_rules(target_path).is_empty());
+    }
+
+    #[test]
+    fn check_eol_unset_disables_inherited_setting() {
+        let target_path = "../../testdata/end_of_line/unset/nested/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.end_of_line, None);
+        assert!(eol_rules(target_path).is_empty());
+    }
+
+    #[test]
+    fn check_eol_accepts_empty_file() {
+        assert!(eol_rules("../../testdata/end_of_line/empty/no_error.target").is_empty());
+    }
+
+    #[test]
+    fn check_eol_allows_missing_final_lf_or_cr_when_final_newline_is_not_required() {
+        assert!(eol_rules("../../testdata/end_of_line/lf/no_final_newline.target").is_empty());
+        assert!(eol_rules("../../testdata/end_of_line/cr/no_final_newline.target").is_empty());
+    }
+
+    #[test]
+    #[ignore = "Regression: end_of_line must not require a final newline; tracked in Kanban"]
+    fn check_eol_crlf_allows_missing_final_newline_when_insert_final_newline_is_false() {
+        assert!(
+            eol_rules("../../testdata/end_of_line/crlf_no_final_newline/no_error.target")
+                .is_empty()
+        );
     }
 }

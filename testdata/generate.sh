@@ -18,6 +18,7 @@ pushd end_of_line
     pushd lf
         echo -ne "root = true\n[*.target]\nend_of_line = lf\n" > .editorconfig
         echo -ne "a\nb\nc\n" > no_error.target
+        echo -ne "a\nb" > no_final_newline.target
         echo -ne "a\r\nb\r\nc\r\n" > error_crlf.target
         echo -ne "a\rb\rc\r" > error_cr.target
     popd
@@ -25,8 +26,37 @@ pushd end_of_line
     pushd cr
         echo -ne "root = true\n[*.target]\nend_of_line = cr\n" > .editorconfig
         echo -ne "a\rb\rc\r" > no_error.target
+        echo -ne "a\rb" > no_final_newline.target
         echo -ne "a\r\nb\r\nc\r\n" > error_crlf.target
         echo -ne "a\nb\nc\n" > error_lf.target
+    popd
+    [ -d crlf_no_final_newline ] || mkdir -p crlf_no_final_newline
+    pushd crlf_no_final_newline
+        echo -ne "root = true\n[*.target]\nend_of_line = crlf\ninsert_final_newline = false\n" > .editorconfig
+        echo -ne "a\r\nb" > no_error.target
+    popd
+    [ -d lf_mixed ] || mkdir -p lf_mixed
+    pushd lf_mixed
+        echo -ne "root = true\n[*.target]\nend_of_line = lf\n" > .editorconfig
+        echo -ne "a\nb\r\nc\rd\n" > error_mixed.target
+    popd
+    [ -d lf_uppercase ] || mkdir -p lf_uppercase
+    pushd lf_uppercase
+        echo -ne "root = true\n[*.target]\nend_of_line = LF\n" > .editorconfig
+        echo -ne "a\nb\n" > no_error.target
+    popd
+    [ -d empty ] || mkdir -p empty
+    pushd empty
+        echo -ne "root = true\n[*.target]\nend_of_line = crlf\n" > .editorconfig
+        : > no_error.target
+    popd
+    [ -d unset/nested ] || mkdir -p unset/nested
+    pushd unset
+        echo -ne "root = true\n[*.target]\nend_of_line = lf\n" > .editorconfig
+        pushd nested
+            echo -ne "[*.target]\nend_of_line = unset\n" > .editorconfig
+            echo -ne "a\r\nb\rc\n" > no_error.target
+        popd
     popd
 popd
 
