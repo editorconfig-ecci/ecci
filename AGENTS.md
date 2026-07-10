@@ -16,6 +16,13 @@ GitHub Action.
   `docs/design/`, and contributor workflows in `docs/development/`.
 - Read [documentation governance](docs/design/documentation-governance.md)
   before creating or restructuring documentation.
+- Before proceeding, ask the user a concise, user-facing clarifying question
+  when a material ambiguity remains in the requirements, intended behavior,
+  acceptance criteria, or priority and no safe assumption can be made. State
+  the decision the user needs to make. Do not silently choose product behavior
+  on the user's behalf.
+- Resolve routine, low-risk implementation details from established repository
+  conventions without unnecessary questions.
 - Update affected documentation when behavior, configuration, diagnostics,
   action inputs, architecture, or contributor workflow changes.
 - For Rust changes, run the relevant tests; normally use `cargo test --workspace`.
