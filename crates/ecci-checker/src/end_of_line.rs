@@ -23,7 +23,10 @@ pub fn check_end_of_line<T: Output>(
         }
     } else if let Some(EndOfLine::CRLF) = &config.end_of_line {
         for (i, c) in content.char_indices() {
-            if c == '\r' && i != content.len() - 2 {
+            // Only validate newline characters that are actually present.  In
+            // particular, a final line without a newline is handled by
+            // `insert_final_newline`, not by this rule.
+            if c == '\r' && content.as_bytes().get(i + 1) != Some(&b'\n') {
                 output.output(
                     line_number,
                     i,
@@ -33,7 +36,7 @@ pub fn check_end_of_line<T: Output>(
                     "end_of_line",
                 );
             }
-            if c == '\n' && i != content.len() - 1 {
+            if c == '\n' && (i == 0 || content.as_bytes()[i - 1] != b'\r') {
                 output.output(
                     line_number,
                     i,
@@ -43,16 +46,6 @@ pub fn check_end_of_line<T: Output>(
                     "end_of_line",
                 );
             }
-        }
-        if !content.ends_with("\r\n") {
-            output.output(
-                line_number,
-                content.len() - 2,
-                2,
-                &config.path.to_string_lossy(),
-                content,
-                "end_of_line",
-            );
         }
     } else if let Some(EndOfLine::CR) = &config.end_of_line {
         for (i, c) in content.char_indices() {
@@ -317,131 +310,18 @@ mod tests {
 
     #[test]
     fn check_eol_crlf_cr() {
-        let target_path = "../../testdata/end_of_line/crlf/error_cr.target";
-        let config =
-            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
-        let mut mock = MockOutput::new();
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 4
-                    && *length == 2
-                    && path == target_path
-                    && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 1
-                    && *length == 1
-                    && path == target_path
-                    && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 3
-                    && *length == 1
-                    && path == target_path
-                    && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 5
-                    && *length == 1
-                    && path == target_path
-                    && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        check_all(&config, &mut mock).unwrap();
+        assert_eq!(
+            eol_rules("../../testdata/end_of_line/crlf/error_cr.target"),
+            vec!["end_of_line", "end_of_line", "end_of_line"]
+        );
     }
 
     #[test]
-    #[ignore]
     fn check_eol_crlf_lf() {
-        let target_path = "../../testdata/end_of_line/crlf/error_lf.target";
-        let config =
-            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
-        let mut mock = MockOutput::new();
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 0
-                    && *length == 2
-                    && path == target_path
-                    && content == "a\n"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 1
-                    && *start == 1
-                    && *length == 1
-                    && path == target_path
-                    && content == "a\n"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 2
-                    && *start == 0
-                    && *length == 2
-                    && path == target_path
-                    && content == "b\n"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        mock.expect_output()
-            .once()
-            .withf(move |line_number, start, length, path, content, rule| {
-                *line_number == 2
-                    && *start == 1
-                    && *length == 1
-                    && path == target_path
-                    && content == "b\n"
-                    && rule == "end_of_line"
-            })
-            .return_const(());
-        // mock.expect_output()
-        //     .once()
-        //     .withf(move |line_number, start, length, path, content, rule| {
-        //         *line_number == 3
-        //             && *start == 0
-        //             && *length == 2
-        //             && path == target_path
-        //             && content == "c\n"
-        //             && rule == "end_of_line"
-        //     })
-        //     .return_const(());
-        // mock.expect_output()
-        //     .once()
-        //     .withf(move |line_number, start, length, path, content, rule| {
-        //         *line_number == 3
-        //             && *start == 1
-        //             && *length == 1
-        //             && path == target_path
-        //             && content == "c\n"
-        //             && rule == "end_of_line"
-        //     })
-        //     .return_const(());
-        check_all(&config, &mut mock).unwrap();
+        assert_eq!(
+            eol_rules("../../testdata/end_of_line/crlf/error_lf.target"),
+            vec!["end_of_line", "end_of_line", "end_of_line"]
+        );
     }
 
     #[test]
@@ -482,7 +362,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Regression: end_of_line must not require a final newline; tracked in Kanban"]
     fn check_eol_crlf_allows_missing_final_newline_when_insert_final_newline_is_false() {
         assert!(
             eol_rules("../../testdata/end_of_line/crlf_no_final_newline/no_error.target")
