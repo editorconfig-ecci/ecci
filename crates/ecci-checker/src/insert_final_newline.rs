@@ -72,4 +72,101 @@ mod tests {
         mock.expect_output().never();
         check_all(&config, &mut mock).unwrap();
     }
+
+    #[test]
+    fn check_insert_final_newline_false_allows_existing_final_newline() {
+        let target_path = "../../testdata/insert_final_newline/false/final_newline_no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_true_accepts_empty_file() {
+        let target_path = "../../testdata/insert_final_newline/empty/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_true_single_line() {
+        let target_path = "../../testdata/insert_final_newline/true/single_line_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .once()
+            .withf(move |line_number, column, length, path, content, rule| {
+                *line_number == 1
+                    && *column == 1
+                    && *length == 0
+                    && path == target_path
+                    && content == "a"
+                    && rule == "insert_final_newline"
+            })
+            .return_const(());
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_true_single_line_with_newline_no_error() {
+        let target_path = "../../testdata/insert_final_newline/true/single_line_no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_unset_disables_parent_setting() {
+        let target_path = "../../testdata/insert_final_newline/unset/child/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.insert_final_newline, None);
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_is_case_insensitive() {
+        let target_path = "../../testdata/insert_final_newline/uppercase_true/error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.insert_final_newline, Some(true));
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .once()
+            .withf(move |line_number, column, length, path, content, rule| {
+                *line_number == 1
+                    && *column == 1
+                    && *length == 0
+                    && path == target_path
+                    && content == "a"
+                    && rule == "insert_final_newline"
+            })
+            .return_const(());
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_insert_final_newline_with_each_configured_line_ending() {
+        for target_path in [
+            "../../testdata/insert_final_newline/end_of_line/lf/no_error.target",
+            "../../testdata/insert_final_newline/end_of_line/crlf/no_error.target",
+            "../../testdata/insert_final_newline/end_of_line/cr/no_error.target",
+        ] {
+            let config =
+                ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+            let mut mock = MockOutput::new();
+            mock.expect_output().never();
+            check_all(&config, &mut mock).unwrap();
+        }
+    }
 }

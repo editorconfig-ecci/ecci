@@ -1,0 +1,2 @@
+[*.target]
+insert_final_newline = unset
