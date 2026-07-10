@@ -118,7 +118,11 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     config.insert_final_newline = parse_bool(value);
                 }
                 "max_line_length" => {
-                    config.max_line_length = Some(value.parse().unwrap());
+                    if value.eq_ignore_ascii_case("unset") {
+                        config.max_line_length = None;
+                    } else {
+                        config.max_line_length = Some(value.parse().unwrap());
+                    }
                 }
                 _ => {}
             }
@@ -129,6 +133,16 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
         }
     }
     Ok(config)
+}
+
+fn parse_bool(value: &str) -> Option<bool> {
+    if value.eq_ignore_ascii_case("true") {
+        Some(true)
+    } else if value.eq_ignore_ascii_case("false") {
+        Some(false)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

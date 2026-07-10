@@ -1,4 +1,4 @@
-use ecci_editorconfig::{Config, EndOfLine};
+use ecci_editorconfig::Config;
 
 use crate::Output;
 
@@ -9,14 +9,8 @@ pub fn check_insert_final_newline<T: Output>(
     content: &str,
     has_next_line: bool,
 ) {
-    let eol = match config.end_of_line {
-        Some(EndOfLine::CR) => "\r",
-        Some(EndOfLine::LF) => "\n",
-        Some(EndOfLine::CRLF) => "\r\n",
-        None => "\n",
-    };
     if let Some(true) = config.insert_final_newline {
-        if !has_next_line && !content.ends_with(eol) {
+        if !has_next_line && !content.ends_with(['\n', '\r']) {
             output.output(
                 line_number,
                 content.len(),
@@ -32,6 +26,24 @@ pub fn check_insert_final_newline<T: Output>(
 #[cfg(test)]
 mod tests {
     use crate::{check_all, MockOutput};
+
+    struct RecordingOutput {
+        rules: Vec<String>,
+    }
+
+    impl crate::Output for RecordingOutput {
+        fn output(
+            &mut self,
+            _line_number: usize,
+            _start: usize,
+            _length: usize,
+            _path: &str,
+            _content: &str,
+            rule: &str,
+        ) {
+            self.rules.push(rule.to_owned());
+        }
+    }
 
     #[test]
     fn check_insert_final_newline_true_no_error() {
@@ -168,5 +180,17 @@ mod tests {
             mock.expect_output().never();
             check_all(&config, &mut mock).unwrap();
         }
+    }
+
+    #[test]
+    fn check_insert_final_newline_does_not_report_eol_format_mismatch() {
+        let target_path = "../../testdata/insert_final_newline/end_of_line/cr/mismatched_lf.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut output = RecordingOutput { rules: Vec::new() };
+
+        check_all(&config, &mut output).unwrap();
+
+        assert_eq!(output.rules, vec!["end_of_line", "end_of_line"]);
     }
 }
