@@ -9,12 +9,21 @@ pub fn check_trim_trailing_whitespace<T: Output>(
     content: &str,
 ) {
     if let Some(true) = config.trim_trailing_whitespace {
-        let trimmed = content.trim_end_matches(['\r', '\n']);
-        if trimmed.ends_with(' ') {
+        let newline_len = if content.ends_with("\r\n") {
+            2
+        } else if content.ends_with(['\r', '\n']) {
+            1
+        } else {
+            return;
+        };
+        let line = &content[..content.len() - newline_len];
+        let whitespace_start = line.trim_end_matches(char::is_whitespace).len();
+
+        if whitespace_start != line.len() {
             output.output(
                 line_number,
-                trimmed.len() - 1,
-                1,
+                whitespace_start,
+                line.len() - whitespace_start,
                 &config.path.to_string_lossy(),
                 content,
                 "trim_trailing_whitespace",
@@ -46,8 +55,8 @@ mod tests {
         mock.expect_output()
             .withf(move |line_number, column, length, path, content, rule| {
                 *line_number == 2
-                    && *column == 2
-                    && *length == 1
+                    && *column == 1
+                    && *length == 2
                     && path == target_path
                     && content == "b  \n"
                     && rule == "trim_trailing_whitespace"
@@ -66,8 +75,8 @@ mod tests {
         mock.expect_output()
             .withf(move |line_number, column, length, path, content, rule| {
                 *line_number == 2
-                    && *column == 1
-                    && *length == 1
+                    && *column == 0
+                    && *length == 2
                     && path == target_path
                     && content == "  \n"
                     && rule == "trim_trailing_whitespace"
@@ -108,30 +117,52 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "documents failure to handle unset in the EditorConfig parser"]
     fn check_trim_trailing_whitespace_unset_removes_inherited_effect() {
         let target_path = "../../testdata/trim_trailing_whitespace/unset/child/no_error.target";
         let config =
             ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        assert_eq!(config.trim_trailing_whitespace, None);
         let mut mock = MockOutput::new();
         mock.expect_output().never();
         check_all(&config, &mut mock).unwrap();
     }
 
     #[test]
-    #[ignore = "documents missing support for tabs and other whitespace characters"]
     fn check_trim_trailing_whitespace_rejects_any_whitespace_before_newline() {
         let target_path =
             "../../testdata/trim_trailing_whitespace/specification_regressions/any_whitespace.target";
         let config =
             ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
         let mut mock = MockOutput::new();
-        mock.expect_output().times(4).return_const(());
+        for (line_number, start, length, content) in [
+            (1, 5, 1, "space \n"),
+            (2, 0, 1, "\t\n"),
+            (3, 0, 1, "\u{000b}\n"),
+            (4, 0, 2, "\u{00a0}\n"),
+        ] {
+            mock.expect_output()
+                .withf(
+                    move |actual_line_number,
+                          actual_start,
+                          actual_length,
+                          path,
+                          actual_content,
+                          rule| {
+                        *actual_line_number == line_number
+                            && *actual_start == start
+                            && *actual_length == length
+                            && path == target_path
+                            && actual_content == content
+                            && rule == "trim_trailing_whitespace"
+                    },
+                )
+                .once()
+                .return_const(());
+        }
         check_all(&config, &mut mock).unwrap();
     }
 
     #[test]
-    #[ignore = "documents incorrect handling of whitespace on a final line without a newline"]
     fn check_trim_trailing_whitespace_ignores_final_line_without_newline() {
         let target_path =
             "../../testdata/trim_trailing_whitespace/specification_regressions/final_line.target";
@@ -143,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "documents duplicate output with insert_final_newline on a final line without a newline"]
     fn check_trim_trailing_whitespace_does_not_conflict_with_insert_final_newline() {
         let target_path =
             "../../testdata/trim_trailing_whitespace/insert_final_newline_interaction/final_line.target";
