@@ -38,6 +38,13 @@ not follow symbolic links found during traversal, whether they point to files
 or directories. Such entries are skipped with the `symlink` reason. This
 avoids cycles, duplicate checks, and unexpectedly leaving the requested tree.
 
+Traversal never enters a directory named exactly `.git`, at any depth. This is
+an unconditional traversal invariant rather than an ignore rule, so neither a
+`.gitignore` nor `.ecciignore` negation can re-include it. Naming `.git` or one
+of its descendant directories as a traversal root does not bypass the
+invariant. A regular file named `.git` remains a candidate, as do paths with
+different names such as `.github`.
+
 The implementation must retain enough identity information to check a file at
 most once when the same file is supplied by more than one argument. Identity is
 the resolved regular file, not the spelling of the input path. On platforms
@@ -177,6 +184,7 @@ covered by automated CLI or selection-layer tests.
 | `.ecciignore` | Root and nested files apply hierarchically; its rules take precedence over `.gitignore`; a final negated rule re-includes a regular file and force-selects it for binary detection. |
 | Direct paths | A direct ignored regular file is selected; a direct directory honors ignore files; missing, unsupported, and broken-link paths are operational errors while later arguments continue. |
 | Defaults and traversal | Omitting positional paths behaves exactly like a single `.` directory argument; hidden files are candidates; traversal skips file and directory symlinks. |
+| Git metadata directories | Direct and nested directories named exactly `.git` are never enumerated, including without ignore files and when a negated ignore pattern attempts to re-include them; regular files named `.git` and differently named paths remain candidates. |
 | File identity | A target named directly, through one or more direct symlinks, and through traversal is checked once; any direct occurrence gives the merged candidate direct-file semantics, while the first occurrence supplies its display path. |
 | EditorConfig and binary detection | A file with applicable configuration reaches binary detection and then the checker; a file with no applicable `.editorconfig` is skipped with the correct reason; binary selection follows the binary-file design. |
 | Ignore decision API | Tests cover parent and nested rules, ignore followed by whitelist and whitelist followed by ignore, and disagreement between `.gitignore` and `.ecciignore`; the structured result records both final source matches, the effective exclusion, and `force_check` before binary classification. |

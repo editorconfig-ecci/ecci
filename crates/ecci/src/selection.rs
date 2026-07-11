@@ -113,6 +113,10 @@ where
 }
 
 fn walk_directory(root: &Path, selection: &mut Selection, identities: &mut HashMap<Handle, usize>) {
+    if has_git_directory_component(root) {
+        return;
+    }
+
     let mut builder = WalkBuilder::new(root);
     builder
         .hidden(false)
@@ -127,9 +131,10 @@ fn walk_directory(root: &Path, selection: &mut Selection, identities: &mut HashM
             || !entry
                 .file_type()
                 .is_some_and(|file_type| file_type.is_dir())
-            || ignore_decision(&filter_root, entry.path(), true)
-                .map(|decision| decision.excluded.is_none())
-                .unwrap_or(true)
+            || (entry.file_name() != ".git"
+                && ignore_decision(&filter_root, entry.path(), true)
+                    .map(|decision| decision.excluded.is_none())
+                    .unwrap_or(true))
     });
 
     for entry in builder.build() {
@@ -184,6 +189,11 @@ fn walk_directory(root: &Path, selection: &mut Selection, identities: &mut HashM
             }
         }
     }
+}
+
+fn has_git_directory_component(path: &Path) -> bool {
+    path.components()
+        .any(|component| component.as_os_str() == ".git")
 }
 
 #[derive(Default)]
@@ -468,6 +478,69 @@ mod tests {
         assert_discovery_fixture(".ecciignore", "ecciignore.fixture");
     }
 
+    fn assert_git_directory_fixture(fixture: &str) {
+        let temp = configured_tree();
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../testdata/file-discovery")
+            .join(fixture);
+        copy_tree(&fixture, temp.path());
+        fs::rename(
+            temp.path().join("git-dir.fixture"),
+            temp.path().join(".git"),
+        )
+        .unwrap();
+        fs::rename(
+            temp.path().join("nested/git-dir.fixture"),
+            temp.path().join("nested/.git"),
+        )
+        .unwrap();
+        fs::rename(
+            temp.path().join("ordinary/git-file.fixture"),
+            temp.path().join("ordinary/.git"),
+        )
+        .unwrap();
+
+        let selection = select_paths([temp.path()]);
+        let relative: Vec<_> = selection
+            .files
+            .iter()
+            .filter_map(|file| file.path.strip_prefix(temp.path()).ok())
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect();
+
+        assert!(relative.contains(&"visible.txt".into()));
+        assert!(relative.contains(&"ordinary/.git".into()));
+        assert!(relative.contains(&".github/workflow.txt".into()));
+        assert!(relative.contains(&"nested/visible.txt".into()));
+        assert!(!relative.iter().any(|path| path.starts_with(".git/")));
+        assert!(!relative.iter().any(|path| path.starts_with("nested/.git/")));
+    }
+
+    #[test]
+    fn git_directories_are_pruned_without_an_ignore_file() {
+        assert_git_directory_fixture("git-directory-no-ignore");
+    }
+
+    #[test]
+    fn git_directories_cannot_be_reincluded_by_ignore_patterns() {
+        assert_git_directory_fixture("git-directory-reincluded");
+    }
+
+    #[test]
+    fn explicitly_named_paths_do_not_bypass_git_directory_pruning() {
+        let temp = configured_tree();
+        let git_file = temp.path().join(".git");
+        write(&git_file, b"ordinary file\n");
+        let direct_file = select_paths([&git_file]);
+        assert_eq!(direct_file.files.len(), 1);
+
+        fs::remove_file(&git_file).unwrap();
+        let nested = temp.path().join(".git/objects");
+        write(&nested.join("object.txt"), b"not inspected\n");
+        assert!(select_paths([temp.path().join(".git")]).files.is_empty());
+        assert!(select_paths([nested]).files.is_empty());
+    }
+
     fn has_skip(selection: &Selection, name: &str, reason: SkipReason) -> bool {
         selection.outcomes.iter().any(|outcome| {
             matches!(
@@ -515,7 +588,6 @@ mod tests {
                 ".gitignore",
                 ".gitignore",
                 ".hidden",
-                "exclude",
                 "forced.bin",
                 "git-only.txt",
                 "keep.special",

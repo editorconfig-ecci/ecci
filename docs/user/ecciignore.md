@@ -34,6 +34,11 @@ over `.gitignore`. A normal `.ecciignore` match excludes the file. A final
 negated pattern, written with `!`, re-includes it even when `.gitignore` would
 exclude it. The `.ecciignore` file itself is never checked.
 
+Directories named exactly `.git` are never traversed, regardless of ignore or
+negation patterns. This also applies when such a directory or one of its
+descendants is named directly as a traversal root. A regular file named `.git`
+and differently named paths such as `.github` are not excluded by this rule.
+
 ## Binary files and force-check rules
 
 Before checking a candidate, `ecci` examines at most its first 8 KiB. Empty
