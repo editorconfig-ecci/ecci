@@ -40,8 +40,14 @@ individual messages as identifiers.
 Each diagnostic has a severity, category, message, optional path, and optional
 one-based line and column. A finding additionally identifies the checked
 EditorConfig property, expected value, and observed value when those values are
-available. Paths are relative to the invocation working directory whenever
-possible and use forward slashes in rendered output.
+available. CLI paths use the invocation working directory captured at process
+startup as their display base. The first selected spelling is made absolute
+against that base and lexically normalized, but is not canonicalized merely for
+display; it is then rendered relative to the base. This preserves a user's
+direct symbolic-link spelling. If a relative path cannot be represented, such
+as across Windows volumes, the normalized absolute spelling is rendered. Paths
+use forward slashes in all rendered output. Display-path choice never supplies
+file identity or workspace-containment evidence.
 
 The initial text format is intended for terminals and CI logs, not as a
 machine-readable API. One diagnostic is rendered on one line; the location is
@@ -122,9 +128,12 @@ resolves outside `GITHUB_WORKSPACE`.
 
 `GITHUB_WORKSPACE` is the immutable containment and annotation base. The Action
 canonicalizes it first. `working-directory` must be relative (an absolute value
-is rejected), is resolved against that base, and is then canonicalized; it must
-name an existing directory whose resolved location is contained by the
-canonical workspace. The default `.` therefore means the workspace root.
+is rejected), is resolved against that base, and is lexically normalized. Both
+that lexical result and its canonical result must be contained by the canonical
+workspace. It must name an existing directory. Thus a lexical escape is not
+made valid by a symbolic link back into the workspace, and a contained lexical
+path is rejected if symbolic-link resolution escapes. The default `.` means the
+workspace root.
 
 The Action parses `paths` by splitting on lines, removing a trailing carriage
 return, trimming leading and trailing ASCII whitespace from each line, and
@@ -136,15 +145,21 @@ absolute paths are configuration errors.
 
 Each path is resolved against the canonical working directory and lexically
 normalized before filesystem access. A lexical `..` is allowed only when the
-normalized result remains within the workspace. Existing paths are then
-canonicalized to resolve symbolic links and must still be contained by the
-canonical workspace. A nonexistent path that is lexically contained proceeds
-to normal selection and becomes `ECCI-IO`; an escape, including an existing
-symlink that resolves outside the workspace, is `ECCI-CONFIG`. Normalized
-entries are de-duplicated in input order before invoking selection. The
-selection layer performs its own resolved-file identity de-duplication, so
-aliases and direct symbolic links that survive containment are also checked
-only once.
+normalized absolute result remains within the canonical workspace. For an
+existing path, the whole path is canonicalized. For a nonexistent path, the
+Action canonicalizes its longest existing ancestor and lexically appends the
+remaining components. The resulting resolved path must also remain within the
+canonical workspace. This catches an escape through an existing symbolic-link
+ancestor even when the final component does not exist. A contained nonexistent
+path proceeds to normal selection and becomes `ECCI-IO`; either a lexical or
+resolved escape is `ECCI-CONFIG`.
+
+Action input de-duplication uses the lexically normalized absolute path as its
+key, with the platform's normal path-comparison semantics, and retains the
+first entry. It intentionally does not use canonical identity: the selection
+layer performs resolved-file identity de-duplication, so aliases and direct
+symbolic links that survive containment are also checked only once while the
+first input spelling remains available for display.
 
 CLI text paths are relative to the invocation working directory when possible,
 as specified above. In the Action, all log, summary, and annotation paths are
@@ -232,8 +247,13 @@ dropping output.
   removes normalized duplicates in first-occurrence order, rejects absolute
   paths and workspace escapes, and reports contained nonexistent paths as I/O
   errors.
+- CLI display tests prove that paths are based on the startup working
+  directory, use forward slashes, preserve the first direct symbolic-link
+  spelling, and fall back to a normalized absolute path only when a relative
+  spelling cannot be represented.
 - Action tests cover a nested working directory, `..` that remains contained,
-  lexical escapes, symlink escapes, and workspace-relative forward-slash paths
+  lexical escapes, symlink escapes, a nonexistent leaf below a symlink escape,
+  duplicate normalized spellings, and workspace-relative forward-slash paths
   in logs, summaries, and annotations.
 - On GitHub Actions, the Action emits correctly escaped, location-aware
   annotations up to `max-annotations`, reports the suppressed count, and writes

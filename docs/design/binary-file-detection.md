@@ -5,8 +5,9 @@
 `ecci` will initially use an embedded, deterministic binary-file classifier. It
 will be mandatory as part of file selection, will read only a bounded prefix,
 and will explicitly recognise UTF-16 before applying a NUL-byte heuristic.
-Files classified as binary are skipped without producing EditorConfig
-diagnostics.
+Files classified as binary are normally skipped without producing EditorConfig
+diagnostics. The documented final `.ecciignore` whitelist is the sole initial
+force-check exception.
 
 The Rust Magika command-line interface (CLI) is **not a required runtime
 dependency** and will not be added to the initial Docker action image. A
@@ -167,9 +168,11 @@ covered by automated tests:
   reported; without that configuration it follows the ordinary sampled rule.
 - Permission/read errors and optional-detector errors are reported and do not
   silently skip a path.
-- A final `.ecciignore` whitelist still runs and records binary classification,
-  then causes a `Binary` result to reach the checker; tests verify that the
-  classifier itself does not consume or reconstruct ignore state.
+- A final `.ecciignore` whitelist is already recorded before classification;
+  classification still runs and records `Binary`, after which `force_check`
+  causes the candidate to reach the checker. Tests verify that the classifier
+  receives only the resolved charset and bytes and does not consume or
+  reconstruct ignore state.
 - Directory traversal tests prove binary selection is independent of filename
   extension, and a Docker-action smoke test exercises the same fixtures.
 
