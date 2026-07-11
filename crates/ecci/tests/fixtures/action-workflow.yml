@@ -1,0 +1,20 @@
+name: ecci Action smoke fixture
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          paths: |
+            src
+            tests
+          working-directory: .
+          fail-on-violation: false
+          annotations: true
+          summary: true
+          max-annotations: 10
+          log-level: diagnostic

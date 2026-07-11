@@ -12,6 +12,7 @@ struct Options {
     paths: Vec<PathBuf>,
     show_skips: bool,
     debug: bool,
+    github_action: Option<ecci::action::ActionOptions>,
 }
 
 fn main() {
@@ -35,7 +36,9 @@ fn main() {
 }
 
 fn run() -> i32 {
-    let options = match parse_args(std::env::args_os().skip(1)) {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let action_requested = args.iter().any(|arg| arg == "--github-action");
+    let options = match parse_args(args.into_iter()) {
         Ok(options) => options,
         Err(message) => {
             let mut report = Report::default();
@@ -43,7 +46,11 @@ fn run() -> i32 {
                 ExecutionErrorKind::Configuration,
                 message,
             )));
-            write_report(&report, TextRenderOptions::default());
+            if action_requested {
+                ecci::action::render_configuration_error(&report);
+            } else {
+                write_report(&report, TextRenderOptions::default());
+            }
             return report.exit_status() as i32;
         }
     };
@@ -94,14 +101,18 @@ fn run() -> i32 {
             }
         }
     }
-    write_report(
-        &report,
-        TextRenderOptions {
-            show_skips: options.show_skips,
-            debug: options.debug,
-        },
-    );
-    report.exit_status() as i32
+    if let Some(action) = &options.github_action {
+        ecci::action::render(&report, action)
+    } else {
+        write_report(
+            &report,
+            TextRenderOptions {
+                show_skips: options.show_skips,
+                debug: options.debug,
+            },
+        );
+        report.exit_status() as i32
+    }
 }
 
 fn parse_args(args: impl Iterator<Item = OsString>) -> Result<Options, String> {
@@ -110,6 +121,13 @@ fn parse_args(args: impl Iterator<Item = OsString>) -> Result<Options, String> {
     for arg in args {
         if !positional_only && arg == "--" {
             positional_only = true;
+        } else if !positional_only && arg == "--github-action" {
+            if options.github_action.is_some() {
+                return Err("option --github-action may be specified only once".into());
+            }
+            let action = ecci::action::ActionOptions::from_env()?;
+            options.paths = action.paths.clone();
+            options.github_action = Some(action);
         } else if !positional_only && arg == "--show-skips" {
             if std::mem::replace(&mut options.show_skips, true) {
                 return Err("option --show-skips may be specified only once".into());

@@ -11,3 +11,5 @@ page from this index and, when it is a primary entry point, from the repository
   path selection, implemented checks, and current exit behavior.
 - [`.ecciignore` configuration](ecciignore.md) explains ignore locations,
   pattern syntax, precedence, negation, and binary force-check behavior.
+- [GitHub Action](github-action.md) explains workflow setup, inputs, outputs,
+  annotations, summaries, and failure behavior.

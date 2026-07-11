@@ -37,6 +37,7 @@ CLI documentation for options and the complete exit-status contract.
 
 - [CLI usage, configuration, and checks](docs/user/cli.md)
 - [`.ecciignore` configuration](docs/user/ecciignore.md)
+- [GitHub Action usage](docs/user/github-action.md)
 - [Development and testing](docs/development/README.md)
 - [Technical design documentation](docs/design/README.md)
 - [Documentation governance](docs/design/documentation-governance.md)
