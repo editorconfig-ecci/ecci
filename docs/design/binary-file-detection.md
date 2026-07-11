@@ -14,8 +14,7 @@ future Magika integration may be provided as an opt-in enhancement after a
 corpus comparison demonstrates material value. It must never be the only way
 to preserve UTF-16 files from binary exclusion.
 
-This is a design decision for the planned path traversal and does not claim
-that the current prototype CLI already performs binary-file detection.
+This design is implemented by the CLI path-selection layer.
 
 ## Context and requirements
 

@@ -29,8 +29,9 @@ no path is supplied, the current directory is used.
 cargo run --package ecci -- src tests
 ```
 
-The command prints the files selected for checking. Its conformance-reporting
-interface is still under development.
+The command writes its summary to standard output, diagnostics to standard
+error, and returns a nonzero status for violations or execution errors. See the
+CLI documentation for options and the complete exit-status contract.
 
 ## Documentation
 

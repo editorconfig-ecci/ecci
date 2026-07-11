@@ -19,6 +19,7 @@ pub enum SkipReason {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ErrorReason {
+    Configuration,
     Nonexistent,
     Unsupported,
     BrokenSymlink,
@@ -266,7 +267,11 @@ fn process_file(
         Err(error) => {
             selection.outcomes.push(error_outcome(
                 path.to_path_buf(),
-                ErrorReason::Filesystem,
+                if error.kind() == std::io::ErrorKind::InvalidData {
+                    ErrorReason::Configuration
+                } else {
+                    ErrorReason::Filesystem
+                },
                 "resolve .editorconfig",
                 error,
             ));

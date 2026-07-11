@@ -3,8 +3,8 @@
 ## Purpose
 
 This document defines how the `ecci` command-line interface (CLI) turns file
-and directory arguments into files that are checked. It is a design contract
-for a future CLI implementation; it does not describe the current prototype.
+and directory arguments into files that are checked. It records the contract
+implemented by the current CLI.
 
 The design keeps project-owned exclusion rules deterministic while preserving
 the useful command-line convention that an explicitly named file is checked.
