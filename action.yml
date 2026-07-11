@@ -1,5 +1,43 @@
 name: 'ecci'
-desctiption: 'Check .editorconfig settings is applied'
+description: 'Check files against their applicable .editorconfig settings'
+inputs:
+  paths:
+    description: 'Newline-separated repository-relative files or directories to check'
+    required: false
+    default: '.'
+  working-directory:
+    description: 'Directory, within the workspace, used to resolve paths'
+    required: false
+    default: '.'
+  fail-on-violation:
+    description: 'Fail the action when violations are found'
+    required: false
+    default: 'true'
+  annotations:
+    description: 'Emit GitHub workflow-command annotations'
+    required: false
+    default: 'true'
+  summary:
+    description: 'Write a GitHub Actions job summary'
+    required: false
+    default: 'true'
+  max-annotations:
+    description: 'Maximum number of file-level annotations'
+    required: false
+    default: '50'
+  log-level:
+    description: 'Log volume: quiet, summary, diagnostic, or debug'
+    required: false
+    default: 'summary'
+outputs:
+  outcome:
+    description: 'success, violations, configuration-error, io-error, or internal-error'
+  violations:
+    description: 'Number of reported violations'
+  checked-files:
+    description: 'Number of files fully checked'
+  skipped-files:
+    description: 'Number of intentionally skipped files'
 runs:
   using: 'docker'
   image: 'Dockerfile'

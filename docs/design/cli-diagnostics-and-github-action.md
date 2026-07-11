@@ -4,8 +4,8 @@
 
 This document defines the public result-reporting contract for the `ecci`
 command-line interface (CLI) and its GitHub Action. The shared model, text
-renderer, target selection, and checker-backed CLI are implemented. Wiring the
-same model into the Action remains separate work.
+renderer, target selection, checker-backed CLI, and Docker Action presentation
+are implemented.
 
 The design distinguishes a **finding** (a checked file does not conform) from
 an **execution error** (the command could not reliably complete the requested
