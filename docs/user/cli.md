@@ -56,6 +56,13 @@ There is no stable CLI result-reporting or exit-status contract for
 configuration violations. Do not use the current command in continuous
 integration to determine whether files conform.
 
+The underlying typed report model and human-oriented text renderer now
+implement the agreed diagnostic categories, aggregate summary, and exit-status
+calculation. They are not connected to the current CLI prototype yet. Once the
+checker execution path is connected, diagnostics will be human-facing output,
+not a machine-readable interface; integrations such as the GitHub Action will
+consume the typed report directly instead of parsing CLI text.
+
 ## Roadmap
 
 The planned end-user-facing work is:
