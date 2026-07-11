@@ -47,6 +47,10 @@ Finding codes identify checked properties. `ECCI-CONFIG`, `ECCI-IO`, and
 skip. Human-readable text is not a machine-readable API. An empty selection is
 reported as `Checked 0 files: no targets selected.`
 
+The initial release does not provide JSON or Static Analysis Results
+Interchange Format (SARIF) output. Do not parse the text format as a substitute
+for either format.
+
 ## Exit status
 
 | Status | Meaning |

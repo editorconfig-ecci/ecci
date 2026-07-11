@@ -1,0 +1,10 @@
+root = true
+
+[*]
+indent_style = space
+
+[*.utf16le]
+charset = utf-16le
+
+[*.utf16be]
+charset = utf-16be

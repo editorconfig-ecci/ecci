@@ -50,3 +50,5 @@ With `fail-on-violation: false`, an `outcome` of `violations` has a successful
 step status. Configuration, input/output, and internal errors always fail. The
 Action's annotations appear on the workflow check when GitHub supports the
 reported location; no pull-request comment or additional permission is used.
+The initial release does not produce JSON or Static Analysis Results
+Interchange Format (SARIF) artifacts.

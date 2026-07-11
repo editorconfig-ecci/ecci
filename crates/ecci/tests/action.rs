@@ -4,9 +4,54 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
+const RELEASE_FIXTURE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/release-semantics"
+);
+
 fn write(path: &Path, contents: &str) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, contents).unwrap();
+}
+
+fn copy_tree(source: &Path, destination: &Path) {
+    fs::create_dir_all(destination).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let target = destination.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            fs::copy(entry.path(), target).unwrap();
+        }
+    }
+}
+
+fn populate_release_fixture(workspace: &Path) {
+    copy_tree(Path::new(RELEASE_FIXTURE), workspace);
+    fs::write(
+        workspace.join("bom.utf16le"),
+        [0xff, 0xfe, b'o', 0, b'k', 0, b'\n', 0],
+    )
+    .unwrap();
+    fs::write(
+        workspace.join("bom.utf16be"),
+        [0xfe, 0xff, 0, b'o', 0, b'k', 0, b'\n'],
+    )
+    .unwrap();
+    fs::write(
+        workspace.join("configured.utf16le"),
+        [b'o', 0, b'k', 0, b'\n', 0],
+    )
+    .unwrap();
+    fs::write(
+        workspace.join("configured.utf16be"),
+        [0, b'o', 0, b'k', 0, b'\n'],
+    )
+    .unwrap();
+    fs::write(workspace.join("binary.dat"), b"binary\0data").unwrap();
+    fs::write(workspace.join("forced.dat"), b"\tforced\0data\n").unwrap();
+    fs::write(workspace.join("ignored.txt"), b"\tignored\n").unwrap();
 }
 
 struct ActionFixture {
@@ -88,6 +133,80 @@ fn execution_errors_are_not_remapped() {
     assert!(fs::read_to_string(&fixture.output)
         .unwrap()
         .contains("outcome=io-error"));
+}
+
+#[test]
+fn action_uses_the_cli_selection_report_and_failure_semantics() {
+    let fixture = ActionFixture::new();
+    populate_release_fixture(&fixture.workspace);
+    fixture
+        .command()
+        .env("INPUT_LOG_LEVEL", "diagnostic")
+        .env("INPUT_FAIL_ON_VIOLATION", "true")
+        .assert()
+        .code(1)
+        .stdout(
+            predicate::str::contains("file=forced.dat,line=1,col=1").and(predicate::str::contains(
+                "file=nested/nested.txt,line=1,col=4",
+            )),
+        )
+        .stderr(
+            predicate::str::contains("error[ECCI001] forced.dat:1:1").and(
+                predicate::str::contains("error[ECCI007] nested/nested.txt:1:4"),
+            ),
+        );
+    assert_eq!(
+        fs::read_to_string(&fixture.output).unwrap(),
+        "outcome=violations\nviolations=2\nchecked-files=9\nskipped-files=2\n"
+    );
+}
+
+#[test]
+fn action_can_suppress_annotations_and_summary_without_changing_the_report() {
+    let fixture = ActionFixture::new();
+    populate_release_fixture(&fixture.workspace);
+    fixture
+        .command()
+        .env("INPUT_ANNOTATIONS", "false")
+        .env("INPUT_SUMMARY", "false")
+        .env("INPUT_FAIL_ON_VIOLATION", "false")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr("");
+    assert_eq!(
+        fs::read_to_string(&fixture.output).unwrap(),
+        "outcome=violations\nviolations=2\nchecked-files=9\nskipped-files=2\n"
+    );
+    assert!(!fixture.summary.exists());
+}
+
+#[test]
+fn container_entrypoint_preserves_release_fixture_semantics() {
+    let fixture = ActionFixture::new();
+    populate_release_fixture(&fixture.workspace);
+    Command::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../entrypoint.sh"))
+        .env("ECCI_BIN", env!("CARGO_BIN_EXE_ecci"))
+        .env("GITHUB_WORKSPACE", &fixture.workspace)
+        .env("GITHUB_OUTPUT", &fixture.output)
+        .env("GITHUB_STEP_SUMMARY", &fixture.summary)
+        .env("INPUT_PATHS", ".")
+        .env("INPUT_WORKING_DIRECTORY", ".")
+        .env("INPUT_FAIL_ON_VIOLATION", "false")
+        .env("INPUT_ANNOTATIONS", "true")
+        .env("INPUT_SUMMARY", "true")
+        .env("INPUT_MAX_ANNOTATIONS", "50")
+        .env("INPUT_LOG_LEVEL", "quiet")
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("file=forced.dat,line=1,col=1").and(predicate::str::contains(
+                "file=nested/nested.txt,line=1,col=4",
+            )),
+        );
+    assert!(fs::read_to_string(&fixture.output)
+        .unwrap()
+        .contains("violations=2\nchecked-files=9\nskipped-files=2"));
 }
 
 #[test]

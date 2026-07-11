@@ -4,6 +4,11 @@ use std::fs;
 use std::path::Path;
 use tempfile::TempDir;
 
+const RELEASE_FIXTURE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/release-semantics"
+);
+
 fn write(path: &Path, contents: &str) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, contents).unwrap();
@@ -15,6 +20,48 @@ fn project(config: &str, file: &str) -> (TempDir, std::path::PathBuf) {
     let target = temp.path().join("target.txt");
     write(&target, file);
     (temp, target)
+}
+
+fn copy_tree(source: &Path, destination: &Path) {
+    fs::create_dir_all(destination).unwrap();
+    for entry in fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let target = destination.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_tree(&entry.path(), &target);
+        } else {
+            fs::copy(entry.path(), target).unwrap();
+        }
+    }
+}
+
+fn release_fixture() -> TempDir {
+    let temp = tempfile::tempdir().unwrap();
+    copy_tree(Path::new(RELEASE_FIXTURE), temp.path());
+    fs::write(
+        temp.path().join("bom.utf16le"),
+        [0xff, 0xfe, b'o', 0, b'k', 0, b'\n', 0],
+    )
+    .unwrap();
+    fs::write(
+        temp.path().join("bom.utf16be"),
+        [0xfe, 0xff, 0, b'o', 0, b'k', 0, b'\n'],
+    )
+    .unwrap();
+    fs::write(
+        temp.path().join("configured.utf16le"),
+        [b'o', 0, b'k', 0, b'\n', 0],
+    )
+    .unwrap();
+    fs::write(
+        temp.path().join("configured.utf16be"),
+        [0, b'o', 0, b'k', 0, b'\n'],
+    )
+    .unwrap();
+    fs::write(temp.path().join("binary.dat"), b"binary\0data").unwrap();
+    fs::write(temp.path().join("forced.dat"), b"\tforced\0data\n").unwrap();
+    fs::write(temp.path().join("ignored.txt"), b"\tignored\n").unwrap();
+    temp
 }
 
 #[test]
@@ -138,4 +185,32 @@ fn invalid_and_duplicate_controls_are_configuration_errors() {
             .code(2)
             .stderr(predicate::str::contains("error[ECCI-CONFIG]"));
     }
+}
+
+#[test]
+fn release_fixture_covers_encoding_binary_ignore_and_nested_config_semantics() {
+    let fixture = release_fixture();
+    Command::cargo_bin("ecci")
+        .unwrap()
+        .current_dir(fixture.path())
+        .args(["--show-skips", "."])
+        .assert()
+        .code(1)
+        .stdout("Checked 9 files: 2 violations, 2 skipped, 0 execution errors.\n")
+        .stderr(
+            predicate::str::contains("error[ECCI001] forced.dat:1:1")
+                .and(predicate::str::contains(
+                    "error[ECCI007] nested/nested.txt:1:4",
+                ))
+                .and(predicate::str::contains(
+                    "warning[ECCI-SKIP] binary.dat: binary file; skipped",
+                ))
+                .and(predicate::str::contains(
+                    "warning[ECCI-SKIP] ignored.txt: excluded by .gitignore; skipped",
+                ))
+                .and(predicate::str::contains("bom.utf16le").not())
+                .and(predicate::str::contains("bom.utf16be").not())
+                .and(predicate::str::contains("configured.utf16le").not())
+                .and(predicate::str::contains("configured.utf16be").not()),
+        );
 }
