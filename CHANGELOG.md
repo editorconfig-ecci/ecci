@@ -1,5 +1,28 @@
 # Changelog
 
+## [v0.0.7](https://github.com/editorconfig-ecci/ecci/compare/v0.0.6...v0.0.7) - 2026-07-11
+
+### 🚀 Features
+- implement ecci-editorconfig library crate by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/52
+- implement checker skelton and implement check_end_of_line by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/53
+- implement check_indent_style by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/56
+- implement check_indent_size by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/58
+- implement check_trim_trailing_whitespace by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/59
+- implement max_line_length by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/60
+- implement check_insert_final_newline by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/61
+### 🐛 Bug Fixes
+- fix auto labeler by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/49
+- fix rust workflows by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/54
+- update tagpr config by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/55
+- remove debug message by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/57
+- Fix Docker image build by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/63
+- fix: silence charset checker unused variable warnings by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/79
+- fix: detect mixed indentation by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/82
+### 🧰 Maintenance
+- Update workspace and add ecci-editorconfig crate by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/48
+- Improve CI build caching by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/80
+- Use install-action for cargo-udeps by @kounoike in https://github.com/editorconfig-ecci/ecci/pull/104
+
 ## [v0.0.6](https://github.com/kounoike/ecci/compare/v0.0.5...v0.0.6) - 2024-02-20
 ### 🐛 Bug Fixes
 - fix pullrequest.yml condition by @kounoike in https://github.com/kounoike/ecci/pull/46
