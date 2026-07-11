@@ -87,8 +87,35 @@ fn violation_has_stable_code_and_one_based_location() {
         .code(1)
         .stdout("Checked 1 files: 1 violations, 0 skipped, 0 execution errors.\n")
         .stderr(predicate::str::contains(
-            "error[indent_style.invalid_value] target.txt:2:1: indent_style must be space; found tab\n",
+            "error[indent_style.invalid_value] target.txt:2:1: expected indent_style=space; detected indent_style=tab\n",
         ));
+}
+
+#[test]
+fn every_property_violation_reports_expected_and_detected_evidence() {
+    let cases = [
+        ("indent_style = space\n", "\tbad\n", "expected indent_style=space; detected indent_style=tab"),
+        ("indent_style = space\nindent_size = 4\n", "  bad\n", "expected indent_size=4; detected indent_size=2"),
+        ("end_of_line = lf\n", "bad\r\nalso\r", "expected end_of_line=lf; detected end_of_line=mixed (crlf=1, cr=1, lf=0)"),
+        ("charset = utf-8-bom\n", "bad\n", "expected charset=utf-8-bom; detected charset=utf-8 BOM absent"),
+        ("trim_trailing_whitespace = true\n", "bad  \n", "expected trim_trailing_whitespace=true; detected trim_trailing_whitespace=2 trailing whitespace bytes"),
+        ("insert_final_newline = true\n", "bad", "expected insert_final_newline=true; detected insert_final_newline=final newline absent"),
+        ("max_line_length = 3\n", "1234\n", "expected max_line_length=3; detected max_line_length=4 bytes"),
+    ];
+    for (setting, contents, message) in cases {
+        let config = format!("root = true\n[*]\n{setting}");
+        let (temp, target) = project(&config, contents);
+        Command::cargo_bin("ecci")
+            .unwrap()
+            .current_dir(temp.path())
+            .arg(target)
+            .assert()
+            .code(1)
+            .stderr(
+                predicate::str::contains(message)
+                    .and(predicate::str::contains("does not conform").not()),
+            );
+    }
 }
 
 #[test]
