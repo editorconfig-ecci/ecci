@@ -2,10 +2,12 @@
 
 ## Status and scope
 
-This document defines the intended public result-reporting contract for the
-first stable `ecci` command-line interface (CLI) and its GitHub Action. It is a
-design decision, not a description of the current CLI prototype. User-facing
-usage documentation will be added when the contract is implemented.
+This document defines the public result-reporting contract for the first stable
+`ecci` command-line interface (CLI) and its GitHub Action. The shared in-memory
+model and text renderer are implemented in `ecci-report`; wiring the model into
+target selection, checker execution, the CLI, and the Action remains separate
+work. The examples below therefore define required behavior and are not a
+claim that the current CLI prototype exposes it yet.
 
 The design distinguishes a **finding** (a checked file does not conform) from
 an **execution error** (the command could not reliably complete the requested
@@ -34,6 +36,14 @@ selected, versioned format (for example, `--format json` with a top-level
 `schema_version`); it is not implied by the text format. SARIF is an export of
 the same report model and must use stable rule identifiers rather than treating
 individual messages as identifiers.
+
+The `ecci-report` crate owns this presentation-independent model. It represents
+findings, intentional skips, the three execution-error categories, optional
+paths and one-based locations, property and expected/observed values, stable
+codes, counters, and the invocation exit status. CLI text, Action annotations,
+job summaries, and future structured formats consume the same typed report.
+Counters are derived from report entries so renderers cannot disagree about
+aggregate results.
 
 ## Diagnostic model and text output
 
@@ -83,6 +93,11 @@ The following cases have these required meanings and text examples:
 
 `--debug` may add causal-chain details for execution errors to stderr, but it
 must not change the category, exit code, or the normal diagnostic message.
+The model accepts debug causes only through the explicitly named
+`SafeDebugDetail::from_sanitized` boundary. Producers must remove secrets,
+environment values, target-file content, backtraces, and host-specific absolute
+paths before crossing that boundary. Normal rendering never reads these
+details; debug rendering opts in explicitly and keeps every cause on one line.
 
 ## Exit-status contract
 
