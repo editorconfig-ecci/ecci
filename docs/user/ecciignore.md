@@ -9,7 +9,9 @@ directory do not.
 `.ecciignore` uses Git ignore-pattern syntax. Blank lines and lines beginning
 with `#` are ignored; `/` anchors a pattern to the directory containing the
 ignore file; a trailing `/` matches directories; and `*`, `?`, and `**` provide
-the usual Git-style wildcards. For example:
+the usual Git-style wildcards. Excluded directories are not traversed, so a
+negation below an excluded directory must first re-include its parent directory,
+as with Git. For example:
 
 ```gitignore
 # Generated files below this directory

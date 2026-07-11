@@ -84,6 +84,12 @@ into selection and reporting; callers must not reconstruct it from whether the
 walker yielded a path. Directory pruning may use the same matcher, but must not
 replace this per-candidate record.
 
+The walker applies the effective ignore decision to directories and prunes an
+excluded directory before reading its contents. Re-inclusion rules for a
+descendant therefore follow Git's requirement that excluded parent directories
+must also be re-included. Files reached through traversed directories still
+retain the per-candidate decision record described above.
+
 For a discovered file, selection proceeds in this order:
 
 1. Skip symbolic links.
