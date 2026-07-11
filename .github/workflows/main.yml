@@ -62,13 +62,26 @@ jobs:
       - name: Run udeps
         run: cargo +nightly udeps --all-targets
 
-# TODO: run tests
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Rust
+        uses: moonrepo/setup-rust@v1
+      - name: Install libeditorconfig
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libeditorconfig-dev
+      - name: Run tests
+        run: cargo test --workspace
 
   actions-timeline:
     name: Actions timeline
     permissions:
       actions: read
-    needs: [format, lint, check-dependencies]
+    needs: [format, lint, check-dependencies, test]
     runs-on: ubuntu-latest
     steps:
       - uses: Kesin11/actions-timeline@v3

@@ -19,6 +19,26 @@ Tests use fixtures under [`testdata`](../../testdata). Some tests are
 intentionally ignored to record known defects; inspect the test output before
 treating the suite as a release gate.
 
+The initial-release CLI and Docker Action acceptance fixture is under
+[`crates/ecci/tests/fixtures/release-semantics`](../../crates/ecci/tests/fixtures/release-semantics).
+It covers UTF-16 selection, binary exclusion, `.ecciignore` force-check rules,
+nested `.editorconfig` resolution, reporting suppression, and violation-status
+remapping. Run its CLI, Action-mode, metadata, and container-entrypoint tests
+with:
+
+```sh
+cargo test --package ecci --test cli --test action
+```
+
+Build the same Docker Action definition used by GitHub with:
+
+```sh
+docker build --tag ecci-action:test .
+```
+
+JSON and Static Analysis Results Interchange Format (SARIF) output are deferred
+and are not part of the initial-release test matrix.
+
 Before contributing, run the checks used by continuous integration:
 
 ```sh
