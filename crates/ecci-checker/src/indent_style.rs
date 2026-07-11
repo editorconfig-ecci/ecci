@@ -31,7 +31,7 @@ pub fn check_indent_style<T: Output>(
             1,
             &config.path.to_string_lossy(),
             content,
-            "indent_style",
+            "indent_style.invalid_value",
         )
     }
 }
@@ -63,7 +63,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "\t\tb\n"
-                    && rule == "indent_style"
+                    && rule == "indent_style.invalid_value"
             })
             .times(1)
             .return_const(());
@@ -103,7 +103,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "  b\n"
-                    && rule == "indent_style"
+                    && rule == "indent_style.invalid_value"
             })
             .times(1)
             .return_const(());
@@ -167,7 +167,7 @@ mod tests {
                         && *length == 1
                         && path == target_path
                         && content == expected_content
-                        && rule == "indent_style"
+                        && rule == "indent_style.invalid_value"
                 })
                 .once()
                 .return_const(());

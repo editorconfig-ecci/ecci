@@ -17,7 +17,7 @@ pub fn check_insert_final_newline<T: Output>(
                 0,
                 &config.path.to_string_lossy(),
                 content,
-                "insert_final_newline",
+                "insert_final_newline.missing",
             )
         }
     }
@@ -69,7 +69,7 @@ mod tests {
                     && *length == 0
                     && path == target_path
                     && content == "c"
-                    && rule == "insert_final_newline"
+                    && rule == "insert_final_newline.missing"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -119,7 +119,7 @@ mod tests {
                     && *length == 0
                     && path == target_path
                     && content == "a"
-                    && rule == "insert_final_newline"
+                    && rule == "insert_final_newline.missing"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -161,7 +161,7 @@ mod tests {
                     && *length == 0
                     && path == target_path
                     && content == "a"
-                    && rule == "insert_final_newline"
+                    && rule == "insert_final_newline.missing"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -191,6 +191,9 @@ mod tests {
 
         check_all(&config, &mut output).unwrap();
 
-        assert_eq!(output.rules, vec!["end_of_line", "end_of_line"]);
+        assert_eq!(
+            output.rules,
+            vec!["end_of_line.invalid_value", "end_of_line.invalid_value"]
+        );
     }
 }

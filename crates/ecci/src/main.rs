@@ -163,14 +163,17 @@ impl ecci_checker::Output for CheckerOutput<'_> {
         content: &str,
         rule: &str,
     ) {
-        let (code, expected, observed) = finding_values(self.config, rule, content, start);
+        let (property, _kind) = rule
+            .split_once('.')
+            .expect("checker diagnostic codes must use property.kind");
+        let (expected, observed) = finding_values(self.config, property, content, start);
         let message = match (&expected, &observed) {
             (Some(expected), Some(observed)) => {
-                format!("{rule} must be {expected}; found {observed}")
+                format!("{property} must be {expected}; found {observed}")
             }
-            _ => format!("{rule} does not conform"),
+            _ => format!("{property} does not conform"),
         };
-        let mut finding = Finding::new(code, rule, message);
+        let mut finding = Finding::new(rule, property, message);
         finding.expected = expected;
         finding.observed = observed;
         finding.location = Some(Location::at(
@@ -187,17 +190,7 @@ fn finding_values(
     rule: &str,
     content: &str,
     start: usize,
-) -> (&'static str, Option<String>, Option<String>) {
-    let code = match rule {
-        "indent_style" => "ECCI001",
-        "indent_size" => "ECCI002",
-        "end_of_line" => "ECCI003",
-        "charset" => "ECCI004",
-        "trim_trailing_whitespace" => "ECCI005",
-        "insert_final_newline" => "ECCI006",
-        "max_line_length" => "ECCI007",
-        _ => "ECCI000",
-    };
+) -> (Option<String>, Option<String>) {
     let observed = match rule {
         "indent_style" => content
             .as_bytes()
@@ -232,7 +225,7 @@ fn finding_values(
         "max_line_length" => config.max_line_length.map(|value| value.to_string()),
         _ => None,
     };
-    (code, expected, observed)
+    (expected, observed)
 }
 
 fn skip_message(reason: SkipReason) -> &'static str {

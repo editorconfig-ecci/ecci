@@ -11,7 +11,7 @@ if env GITHUB_WORKSPACE="$tmp/workspace" ECCI_BIN=/bin/true INPUT_PATHS=. \
   echo 'entrypoint unexpectedly accepted invalid input' >&2
   exit 1
 fi
-grep '::error title=ECCI-CONFIG::' "$tmp/stdout" >/dev/null
+grep '::error title=config.invalid::' "$tmp/stdout" >/dev/null
 env GITHUB_WORKSPACE="$tmp/workspace" ECCI_BIN=/bin/true INPUT_PATHS='one
 two' INPUT_WORKING_DIRECTORY=. INPUT_FAIL_ON_VIOLATION=false INPUT_ANNOTATIONS=false \
   INPUT_SUMMARY=false INPUT_MAX_ANNOTATIONS=0 INPUT_LOG_LEVEL=quiet "$root/entrypoint.sh"

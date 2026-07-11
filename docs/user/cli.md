@@ -21,7 +21,7 @@ targets from being processed.
 
 ## Options
 
-- `--show-skips` writes an `ECCI-SKIP` warning for each skipped path. Skips are
+- `--show-skips` writes a `selection.skipped` warning for each skipped path. Skips are
   always counted but hidden by default.
 - `--debug` adds sanitized causal details for execution errors without changing
   categories, counts, or exit status.
@@ -38,14 +38,31 @@ one-based lines and columns whenever available. The final summary is written to
 standard output.
 
 ```text
-error[ECCI001] src/lib.rs:14:1: indent_style must be space; found tab
+error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab
 Checked 1 files: 1 violations, 0 skipped, 0 execution errors.
 ```
 
-Finding codes identify checked properties. `ECCI-CONFIG`, `ECCI-IO`, and
-`ECCI-INTERNAL` identify execution errors; `ECCI-SKIP` identifies an intentional
-skip. Human-readable text is not a machine-readable API. An empty selection is
-reported as `Checked 0 files: no targets selected.`
+Finding codes use `<property>.<kind>` so that the property and reason can be
+identified without parsing the message. Current codes are:
+
+| Code | Meaning |
+| --- | --- |
+| `indent_style.invalid_value` | An indentation character conflicts with `indent_style`. |
+| `indent_size.invalid_value` | Space indentation is not a multiple of `indent_size`. |
+| `end_of_line.invalid_value` | A line ending conflicts with `end_of_line`. |
+| `charset.invalid_value` | File bytes do not conform to `charset`. |
+| `trim_trailing_whitespace.present` | Trailing whitespace is present when it must be removed. |
+| `insert_final_newline.missing` | A required final newline is missing. |
+| `max_line_length.exceeded` | A line exceeds `max_line_length`. |
+
+Non-property diagnostics use reserved namespaces: `config.invalid`,
+`io.failed`, `internal.unexpected`, and `selection.skipped`. Codes are stable;
+messages may gain context. Human-readable text is not a machine-readable API.
+An empty selection is reported as `Checked 0 files: no targets selected.`
+
+The string codes replace the earlier `ECCI001`--`ECCI007`, `ECCI-CONFIG`,
+`ECCI-IO`, `ECCI-INTERNAL`, and `ECCI-SKIP` codes. This is a breaking change for
+consumers that matched codes in logs or GitHub Action annotations.
 
 The initial release does not provide JSON or Static Analysis Results
 Interchange Format (SARIF) output. Do not parse the text format as a substitute

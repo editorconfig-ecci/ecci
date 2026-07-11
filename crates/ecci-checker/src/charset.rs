@@ -16,7 +16,7 @@ pub fn check_charset<T: Output>(config: &Config, output: &mut T, bytes: &[u8]) {
             bytes.len(),
             &config.path.to_string_lossy(),
             &String::from_utf8_lossy(bytes),
-            "charset",
+            "charset.invalid_value",
         );
     }
 }
@@ -172,7 +172,7 @@ mod tests {
                     *line == 1
                         && *start == 0
                         && path == target_path
-                        && rule == "charset"
+                        && rule == "charset.invalid_value"
                         && (*length > 0 || (*length == 0 && path.ends_with("error_empty.target")))
                 })
                 .return_const(());

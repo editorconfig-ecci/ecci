@@ -17,7 +17,7 @@ pub fn check_max_line_length<T: Output>(
                 trimmed.len() - max_line_length,
                 &config.path.to_string_lossy(),
                 content,
-                "max_line_length",
+                "max_line_length.exceeded",
             );
         }
     }
@@ -51,7 +51,7 @@ mod tests {
                     && *length == 2
                     && path == target_path
                     && content == "bbbbbbbbbbbb\n"
-                    && rule == "max_line_length"
+                    && rule == "max_line_length.exceeded"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -81,7 +81,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "\t\t\t\t\t\n"
-                    && rule == "max_line_length"
+                    && rule == "max_line_length.exceeded"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -115,7 +115,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "aaaaa\r\n"
-                    && rule == "max_line_length"
+                    && rule == "max_line_length.exceeded"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -161,7 +161,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "あいうえおか\n"
-                    && rule == "max_line_length"
+                    && rule == "max_line_length.exceeded"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();

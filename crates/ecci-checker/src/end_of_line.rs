@@ -17,7 +17,7 @@ pub fn check_end_of_line<T: Output>(
                     1,
                     &config.path.to_string_lossy(),
                     content,
-                    "end_of_line",
+                    "end_of_line.invalid_value",
                 );
             }
         }
@@ -33,7 +33,7 @@ pub fn check_end_of_line<T: Output>(
                     1,
                     &config.path.to_string_lossy(),
                     content,
-                    "end_of_line",
+                    "end_of_line.invalid_value",
                 );
             }
             if c == '\n' && (i == 0 || content.as_bytes()[i - 1] != b'\r') {
@@ -43,7 +43,7 @@ pub fn check_end_of_line<T: Output>(
                     1,
                     &config.path.to_string_lossy(),
                     content,
-                    "end_of_line",
+                    "end_of_line.invalid_value",
                 );
             }
         }
@@ -56,7 +56,7 @@ pub fn check_end_of_line<T: Output>(
                     1,
                     &config.path.to_string_lossy(),
                     content,
-                    "end_of_line",
+                    "end_of_line.invalid_value",
                 );
             }
         }
@@ -123,7 +123,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -134,7 +134,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -145,7 +145,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\rb\rc\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -164,7 +164,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\r\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -175,7 +175,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "b\r\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -186,7 +186,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "c\r\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -216,7 +216,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\nb\nc\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -227,7 +227,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\nb\nc\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -238,7 +238,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\nb\nc\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -259,7 +259,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "a\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -270,7 +270,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "\nb\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -281,7 +281,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "\nc\r"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         mock.expect_output()
@@ -292,7 +292,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "\n"
-                    && rule == "end_of_line"
+                    && rule == "end_of_line.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -312,7 +312,11 @@ mod tests {
     fn check_eol_crlf_cr() {
         assert_eq!(
             eol_rules("../../testdata/end_of_line/crlf/error_cr.target"),
-            vec!["end_of_line", "end_of_line", "end_of_line"]
+            vec![
+                "end_of_line.invalid_value",
+                "end_of_line.invalid_value",
+                "end_of_line.invalid_value"
+            ]
         );
     }
 
@@ -320,7 +324,11 @@ mod tests {
     fn check_eol_crlf_lf() {
         assert_eq!(
             eol_rules("../../testdata/end_of_line/crlf/error_lf.target"),
-            vec!["end_of_line", "end_of_line", "end_of_line"]
+            vec![
+                "end_of_line.invalid_value",
+                "end_of_line.invalid_value",
+                "end_of_line.invalid_value"
+            ]
         );
     }
 
@@ -328,7 +336,7 @@ mod tests {
     fn check_eol_lf_reports_every_non_lf_terminator_in_mixed_file() {
         assert_eq!(
             eol_rules("../../testdata/end_of_line/lf_mixed/error_mixed.target"),
-            vec!["end_of_line", "end_of_line"]
+            vec!["end_of_line.invalid_value", "end_of_line.invalid_value"]
         );
     }
 

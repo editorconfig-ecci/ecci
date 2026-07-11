@@ -62,32 +62,68 @@ machine-readable API. One diagnostic is rendered on one line; the location is
 omitted when unavailable. Findings use `error`, skipped work uses `warning`,
 and fatal execution errors use `error`. Detailed progress is never mixed into
 the diagnostic stream unless requested. Skip diagnostics are not shown by
-default. `--show-skips` requests their `ECCI-SKIP` warning lines; skipped files
+default. `--show-skips` requests their `selection.skipped` warning lines; skipped files
 remain counted in either mode.
 
 ```text
-error[ECCI001] src/lib.rs:14:1: indent_style must be space; found tab
-error[ECCI002] src/lib.rs:47:81: max_line_length must be 80; found 96
-warning[ECCI-SKIP] docs/generated.md: no .editorconfig applies; skipped
+error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab
+error[max_line_length.exceeded] src/lib.rs:47:81: max_line_length must be 80; found 96
+warning[selection.skipped] docs/generated.md: no .editorconfig applies; skipped
 Checked 2 files: 2 violations, 1 skipped, 0 execution errors.
 ```
 
-The category codes are stable identifiers for documentation, JSON, SARIF, and
-tests. `ECCI001` and similar property-check codes identify violations;
-`ECCI-CONFIG`, `ECCI-IO`, and `ECCI-INTERNAL` identify the execution-error
-categories; `ECCI-SKIP` identifies an intentional skip. The message may gain
+Codes are stable identifiers for documentation, JSON, SARIF, and tests. A
+property finding uses `<property>.<kind>`. The checker, which knows the precise
+failure, supplies the complete code rather than relying on a renderer-side
+property-to-code table. A new check for an existing property must receive a
+distinct kind when users can act on it differently. Kinds use lower-case
+snake_case and describe the observed failure, such as `invalid_value`,
+`missing`, `present`, or `exceeded`; an existing code must never be repurposed.
+
+Diagnostics without a direct EditorConfig property use reserved namespaces:
+`config` for command-line, Action-input, syntax, and configuration-resolution
+failures; `io` for filesystem operations; `internal` for invariant failures;
+and `selection` for target-selection outcomes. Their form is likewise
+`<namespace>.<kind>`. Current category-level codes are `config.invalid`,
+`io.failed`, `internal.unexpected`, and `selection.skipped`. More specific kinds
+may be added without colliding with property names. The message may gain
 context but must not be the only way to classify a diagnostic.
+
+This migration is intentionally breaking. The project is still on a `0.x`
+release line, and the release workflow classifies such changes with its
+`breaking`/`major` category. Emitting both identifiers would make the code field
+ambiguous, so renderers expose only the new identifier. The complete migration
+inventory is:
+
+| Previous code | Stable string code | Producer |
+| --- | --- | --- |
+| `ECCI001` | `indent_style.invalid_value` | `indent_style` checker |
+| `ECCI002` | `indent_size.invalid_value` | `indent_size` checker |
+| `ECCI003` | `end_of_line.invalid_value` | `end_of_line` checker |
+| `ECCI004` | `charset.invalid_value` | `charset` checker |
+| `ECCI005` | `trim_trailing_whitespace.present` | `trim_trailing_whitespace` checker |
+| `ECCI006` | `insert_final_newline.missing` | `insert_final_newline` checker |
+| `ECCI007` | `max_line_length.exceeded` | `max_line_length` checker |
+| `ECCI-CONFIG` | `config.invalid` | CLI, configuration resolver, and Action input validation |
+| `ECCI-IO` | `io.failed` | file selection and checking operations |
+| `ECCI-INTERNAL` | `internal.unexpected` | report and CLI failure boundary |
+| `ECCI-SKIP` | `selection.skipped` | file selection |
+
+The text renderer preserves `severity[code] location: message`. GitHub Action
+annotation titles and job-summary finding entries use the same code from the
+typed report. Tests cover the report model and renderer, CLI output, Action log
+output, and container-entrypoint validation.
 
 The following cases have these required meanings and text examples:
 
 | Case | Required diagnostic and summary behavior | Example |
 | --- | --- | --- |
-| Violation | Emit one `error[ECCIxxx]` finding for each reportable violation, retain checking other files, and summarize the count. | `error[ECCI001] src/lib.rs:14:1: indent_style must be space; found tab` |
-| Configuration error | Emit `error[ECCI-CONFIG]`; do not claim the affected target was checked. Continue only with independent targets when safe. | `error[ECCI-CONFIG] .editorconfig:12: invalid indent_size value "many"` |
-| I/O error | Emit `error[ECCI-IO]` with the affected path and operation; do not claim that target was checked. Continue only with independent targets when safe. | `error[ECCI-IO] src/lib.rs: failed to read file: Permission denied` |
-| Internal error | Emit exactly one user-safe `error[ECCI-INTERNAL]` summary, without a backtrace by default, and stop normal checking. | `error[ECCI-INTERNAL]: unexpected checker failure; rerun with --debug and report this error` |
+| Violation | Emit one property finding for each reportable violation, retain checking other files, and summarize the count. | `error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab` |
+| Configuration error | Emit `error[config.invalid]`; do not claim the affected target was checked. Continue only with independent targets when safe. | `error[config.invalid] .editorconfig:12: invalid indent_size value "many"` |
+| I/O error | Emit `error[io.failed]` with the affected path and operation; do not claim that target was checked. Continue only with independent targets when safe. | `error[io.failed] src/lib.rs: failed to read file: Permission denied` |
+| Internal error | Emit exactly one user-safe `error[internal.unexpected]` summary, without a backtrace by default, and stop normal checking. | `error[internal.unexpected]: unexpected checker failure; rerun with --debug and report this error` |
 | No targets | Emit no per-file diagnostic and a summary that explicitly says no targets were selected. | `Checked 0 files: no targets selected.` |
-| No applicable `.editorconfig` | Treat the target as skipped, not conforming or failing; emit a warning only when skips are shown and count it in the summary. | `warning[ECCI-SKIP] README.md: no .editorconfig applies; skipped` |
+| No applicable `.editorconfig` | Treat the target as skipped, not conforming or failing; emit a warning only when skips are shown and count it in the summary. | `warning[selection.skipped] README.md: no .editorconfig applies; skipped` |
 
 `--debug` may add causal-chain details for execution errors to stderr, but it
 must not change the category, exit code, or the normal diagnostic message.
@@ -135,7 +171,7 @@ report model as the CLI. Its first-release interface is defined as follows:
 | `log-level` | No | `summary` | One of `quiet`, `summary`, `diagnostic`, or `debug`; controls ordinary log volume, never the final status. |
 
 Boolean and numeric inputs must be validated strictly. Invalid input is an
-Action configuration error, produces an `ECCI-CONFIG` annotation when possible,
+Action configuration error, produces a `config.invalid` annotation when possible,
 and fails the Action. The Action must reject a `working-directory` or path that
 resolves outside `GITHUB_WORKSPACE`.
 
@@ -164,8 +200,8 @@ Action canonicalizes its longest existing ancestor and lexically appends the
 remaining components. The resulting resolved path must also remain within the
 canonical workspace. This catches an escape through an existing symbolic-link
 ancestor even when the final component does not exist. A contained nonexistent
-path proceeds to normal selection and becomes `ECCI-IO`; either a lexical or
-resolved escape is `ECCI-CONFIG`.
+path proceeds to normal selection and becomes `io.failed`; either a lexical or
+resolved escape is `config.invalid`.
 
 Action input de-duplication uses the lexically normalized absolute path as its
 key, with the platform's normal path-comparison semantics, and retains the

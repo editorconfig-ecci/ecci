@@ -135,13 +135,13 @@ does not submit to checking. At minimum, outcomes distinguish:
 
 An outcome includes the affected path and, for errors, enough diagnostic
 detail to identify the failing operation. The reporting contract maps
-intentional skips to `ECCI-SKIP` diagnostics when skips are shown and maps
-operational errors to `ECCI-IO`. It defines the human-readable text format,
+intentional skips to `selection.skipped` diagnostics when skips are shown and maps
+operational errors to `io.failed`. It defines the human-readable text format,
 summary, and future machine-readable formats.
 
 Skip diagnostics are hidden in normal CLI output by default, while every skip
 is still retained in the typed report and included in the aggregate skipped
-count. `--show-skips` emits one `ECCI-SKIP` warning per retained skip. This flag
+count. `--show-skips` emits one `selection.skipped` warning per retained skip. This flag
 changes presentation only; it does not change selection, counts, or exit
 status. There is no negative form because hidden is the default.
 
