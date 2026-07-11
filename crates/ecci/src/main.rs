@@ -1,4 +1,4 @@
-use clap::{ArgAction, Parser};
+use clap::Parser;
 use ecci::selection::{select_paths, ErrorReason, Outcome, SkipReason};
 use ecci_report::{
     render_summary, Diagnostic, ExecutionError, ExecutionErrorKind, Finding, IntentionalSkip,
@@ -10,14 +10,14 @@ use std::path::{Path, PathBuf};
 #[derive(Parser)]
 #[command(disable_help_flag = true, disable_version_flag = true)]
 struct Cli {
-    #[arg(long, action = ArgAction::Count)]
-    github_action: u8,
+    #[arg(long)]
+    github_action: bool,
 
-    #[arg(long, action = ArgAction::Count)]
-    show_skips: u8,
+    #[arg(long)]
+    show_skips: bool,
 
-    #[arg(long, action = ArgAction::Count)]
-    debug: u8,
+    #[arg(long)]
+    debug: bool,
 
     #[arg(value_name = "PATH")]
     paths: Vec<PathBuf>,
@@ -135,23 +135,13 @@ fn parse_args(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Opti
     let cli = Cli::try_parse_from(std::iter::once("ecci".into()).chain(args.iter().cloned()))
         .map_err(|_| unsupported_option(&args))?;
 
-    for (name, count) in [
-        ("--github-action", cli.github_action),
-        ("--show-skips", cli.show_skips),
-        ("--debug", cli.debug),
-    ] {
-        if count > 1 {
-            return Err(format!("option {name} may be specified only once"));
-        }
-    }
-
     let mut options = Options {
         paths: cli.paths,
-        show_skips: cli.show_skips == 1,
-        debug: cli.debug == 1,
+        show_skips: cli.show_skips,
+        debug: cli.debug,
         github_action: None,
     };
-    if cli.github_action == 1 {
+    if cli.github_action {
         let action = ecci::action::ActionOptions::from_env()?;
         options.paths = action.paths.clone();
         options.paths.extend(paths_after_github_action(&args));
