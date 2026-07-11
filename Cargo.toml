@@ -1,10 +1,10 @@
 [workspace]
 
 members = [
-    "crates/ecci",
-    "crates/ecci-checker",
-    "crates/ecci-editorconfig",
-    "crates/ecci-report",
+  "crates/ecci",
+  "crates/ecci-checker",
+  "crates/ecci-editorconfig",
+  "crates/ecci-report",
 ]
 
 resolver = "2"

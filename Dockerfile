@@ -9,10 +9,11 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/ecci/Cargo.toml crates/ecci/Cargo.toml
 COPY crates/ecci-checker/Cargo.toml crates/ecci-checker/Cargo.toml
 COPY crates/ecci-editorconfig/Cargo.toml crates/ecci-editorconfig/Cargo.toml
+COPY crates/ecci-report/Cargo.toml crates/ecci-report/Cargo.toml
 # Cargo validates every workspace member before fetching. These placeholder
 # targets make the manifest-only workspace valid without copying real sources.
-RUN mkdir -p crates/ecci/src crates/ecci-checker/src crates/ecci-editorconfig/src \
-    && touch crates/ecci/src/main.rs crates/ecci-checker/src/lib.rs crates/ecci-editorconfig/src/lib.rs
+RUN mkdir -p crates/ecci/src crates/ecci-checker/src crates/ecci-editorconfig/src crates/ecci-report/src \
+    && touch crates/ecci/src/main.rs crates/ecci-checker/src/lib.rs crates/ecci-editorconfig/src/lib.rs crates/ecci-report/src/lib.rs
 RUN cargo fetch --locked
 
 COPY crates ./crates
