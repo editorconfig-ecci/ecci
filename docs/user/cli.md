@@ -1,42 +1,40 @@
 # CLI usage
 
-`ecci` is intended to check specified files and directories against their
-applicable `.editorconfig` settings. The command-line interface is still under
-development: it currently has no options or path arguments, does not traverse
-directories, and does not report check results.
-
-Run the current prototype from the repository root:
+`ecci` selects specified files and directories according to their applicable
+`.editorconfig` and project ignore rules. Pass one or more paths, or omit them
+to search the current directory:
 
 ```sh
+cargo run --package ecci -- path/to/file path/to/directory
 cargo run --package ecci
 ```
 
-It reads the repository-root `Cargo.toml`, resolves its EditorConfig settings,
-and prints its `indent_style`. With this repository's current configuration,
-the output is:
+Directories are searched recursively, including files whose names begin with
+`.`. Symbolic links found during traversal are not followed. A symbolic link
+named directly is accepted only when it resolves to a regular file. A file is
+selected at most once even when multiple arguments refer to the same file.
 
-```text
-Cargo.toml indent_style:Space
-```
+Directly named regular files bypass `.gitignore` and `.ecciignore`. Directory
+contents follow hierarchical ignore rules. See
+[`.ecciignore` configuration](ecciignore.md) for syntax, precedence, negation,
+and binary force-check behavior.
 
-Do not expect `ecci path/to/file` or `ecci path/to/directory` to work yet.
+Files without applicable EditorConfig properties are skipped. Other candidates
+are subjected to deterministic binary detection before being selected. The
+current command prints one selected path per line; the stable conformance
+diagnostic and summary interface remains under development.
 
 ## Configuration discovery
 
-For a target file, the internal configuration adapter delegates resolution to
-EditorConfig Core C. Settings are obtained from the `.editorconfig` files that
-apply to that file, following normal EditorConfig discovery and precedence
-rules, including `root = true`. See the
-[EditorConfig specification](https://spec.editorconfig.org/) for details.
-
-The current CLI exercises this resolution only for `Cargo.toml`. General file
-and directory selection is planned, not implemented.
+For a target file, the configuration adapter delegates resolution to
+EditorConfig Core C. Settings are obtained from applicable `.editorconfig`
+files using normal EditorConfig discovery and precedence, including
+`root = true`. See the [EditorConfig specification](https://spec.editorconfig.org/)
+for details.
 
 ## Checks
 
-`ecci-editorconfig` and `ecci-checker` are implementation libraries, not
-separate end-user commands. The checker library currently has implementations
-and tests for these EditorConfig properties:
+The checker libraries implement checks for these EditorConfig properties:
 
 - `indent_style`
 - `indent_size` for space indentation
@@ -46,22 +44,13 @@ and tests for these EditorConfig properties:
 - `insert_final_newline`
 - `max_line_length`
 
-The configuration adapter also parses `tab_width`. Existing tests record known
-edge cases and unfinished behavior; the implemented list does not claim
-complete EditorConfig-specification coverage.
+The configuration adapter also parses `tab_width`.
 
 ## Exit behavior
 
-There is no stable CLI result-reporting or exit-status contract for
-configuration violations. Do not use the current command in continuous
-integration to determine whether files conform.
-
-## Roadmap
-
-The planned end-user-facing work is:
-
-- CLI directory traversal with `.gitignore` support.
-- Binary-file detection.
-- A future GitHub Action built on the completed CLI.
-
-These are planned capabilities, not current CLI features.
+Missing paths, broken direct symbolic links, unsupported direct paths, and
+filesystem failures are reported as `ECCI-IO` errors. Selection continues for
+independent arguments, then exits with status 3 if any such error occurred.
+Ordinary exclusions, missing applicable configuration, and binary exclusions
+do not cause failure. Stable exit behavior for conformance violations is not
+implemented yet.

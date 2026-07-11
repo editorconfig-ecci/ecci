@@ -7,3 +7,8 @@ edition = "2021"
 
 [dependencies]
 ecci-editorconfig = { version = "0.0.0", path = "../ecci-editorconfig" }
+ignore = "0.4"
+same-file = "1"
+
+[dev-dependencies]
+tempfile = "3"
