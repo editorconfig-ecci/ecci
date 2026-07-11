@@ -1,13 +1,28 @@
+use clap::Parser;
 use ecci::selection::{select_paths, ErrorReason, Outcome, SkipReason};
 use ecci_report::{
     render_summary, Diagnostic, ExecutionError, ExecutionErrorKind, Finding, IntentionalSkip,
     Location, Report, SafeDebugDetail, TextRenderOptions,
 };
-use std::ffi::OsString;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 
-#[derive(Default)]
+#[derive(Parser)]
+#[command(disable_help_flag = true, disable_version_flag = true)]
+struct Cli {
+    #[arg(long)]
+    github_action: bool,
+
+    #[arg(long)]
+    show_skips: bool,
+
+    #[arg(long)]
+    debug: bool,
+
+    #[arg(value_name = "PATH")]
+    paths: Vec<PathBuf>,
+}
+
 struct Options {
     paths: Vec<PathBuf>,
     show_skips: bool,
@@ -115,37 +130,61 @@ fn run() -> i32 {
     }
 }
 
-fn parse_args(args: impl Iterator<Item = OsString>) -> Result<Options, String> {
-    let mut options = Options::default();
-    let mut positional_only = false;
-    for arg in args {
-        if !positional_only && arg == "--" {
-            positional_only = true;
-        } else if !positional_only && arg == "--github-action" {
-            if options.github_action.is_some() {
-                return Err("option --github-action may be specified only once".into());
-            }
-            let action = ecci::action::ActionOptions::from_env()?;
-            options.paths = action.paths.clone();
-            options.github_action = Some(action);
-        } else if !positional_only && arg == "--show-skips" {
-            if std::mem::replace(&mut options.show_skips, true) {
-                return Err("option --show-skips may be specified only once".into());
-            }
-        } else if !positional_only && arg == "--debug" {
-            if std::mem::replace(&mut options.debug, true) {
-                return Err("option --debug may be specified only once".into());
-            }
-        } else if !positional_only && arg.to_string_lossy().starts_with('-') {
-            return Err(format!("unsupported option {:?}", arg.to_string_lossy()));
-        } else {
-            options.paths.push(PathBuf::from(arg));
-        }
+fn parse_args(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Options, String> {
+    let args: Vec<_> = args.into_iter().collect();
+    let cli = Cli::try_parse_from(std::iter::once("ecci".into()).chain(args.iter().cloned()))
+        .map_err(|_| unsupported_option(&args))?;
+
+    let mut options = Options {
+        paths: cli.paths,
+        show_skips: cli.show_skips,
+        debug: cli.debug,
+        github_action: None,
+    };
+    if cli.github_action {
+        let action = ecci::action::ActionOptions::from_env()?;
+        options.paths = action.paths.clone();
+        options.paths.extend(paths_after_github_action(&args));
+        options.github_action = Some(action);
     }
     if options.paths.is_empty() {
         options.paths.push(PathBuf::from("."));
     }
     Ok(options)
+}
+
+fn unsupported_option(args: &[std::ffi::OsString]) -> String {
+    let option = args
+        .iter()
+        .take_while(|arg| *arg != "--")
+        .find(|arg| {
+            let arg = arg.to_string_lossy();
+            arg.starts_with('-')
+                && !matches!(arg.as_ref(), "--github-action" | "--show-skips" | "--debug")
+        })
+        .map(|arg| arg.to_string_lossy());
+    match option {
+        Some(option) => format!("unsupported option {option:?}"),
+        None => "invalid command-line arguments".into(),
+    }
+}
+
+fn paths_after_github_action(args: &[std::ffi::OsString]) -> Vec<PathBuf> {
+    let mut action_seen = false;
+    let mut positional_only = false;
+    let mut paths = Vec::new();
+    for arg in args {
+        if !positional_only && arg == "--" {
+            positional_only = true;
+        } else if !positional_only && arg == "--github-action" {
+            action_seen = true;
+            paths.clear();
+        } else if !positional_only && matches!(arg.to_str(), Some("--show-skips" | "--debug")) {
+        } else if action_seen {
+            paths.push(PathBuf::from(arg));
+        }
+    }
+    paths
 }
 
 struct CheckerOutput<'a> {
