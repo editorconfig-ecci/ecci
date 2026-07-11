@@ -7,7 +7,7 @@ command-line interface (CLI) and its GitHub Action. The shared model, text
 renderer, target selection, checker-backed CLI, and Docker Action presentation
 are implemented.
 
-The design distinguishes a **finding** (a checked file does not conform) from
+The design distinguishes a **finding** (a checked file violates a setting) from
 an **execution error** (the command could not reliably complete the requested
 work). This distinction is reflected in both diagnostics and exit status.
 
@@ -66,8 +66,8 @@ default. `--show-skips` requests their `selection.skipped` warning lines; skippe
 remain counted in either mode.
 
 ```text
-error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab
-error[max_line_length.exceeded] src/lib.rs:47:81: max_line_length must be 80; found 96
+error[indent_style.invalid_value] src/lib.rs:14:1: expected indent_style=space; detected indent_style=tab
+error[max_line_length.exceeded] src/lib.rs:47:81: expected max_line_length=80; detected max_line_length=96 bytes
 warning[selection.skipped] docs/generated.md: no .editorconfig applies; skipped
 Checked 2 files: 2 violations, 1 skipped, 0 execution errors.
 ```
@@ -118,7 +118,7 @@ The following cases have these required meanings and text examples:
 
 | Case | Required diagnostic and summary behavior | Example |
 | --- | --- | --- |
-| Violation | Emit one property finding for each reportable violation, retain checking other files, and summarize the count. | `error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab` |
+| Violation | Emit one property finding for each reportable violation, retain checking other files, and summarize the count. | `error[indent_style.invalid_value] src/lib.rs:14:1: expected indent_style=space; detected indent_style=tab` |
 | Configuration error | Emit `error[config.invalid]`; do not claim the affected target was checked. Continue only with independent targets when safe. | `error[config.invalid] .editorconfig:12: invalid indent_size value "many"` |
 | I/O error | Emit `error[io.failed]` with the affected path and operation; do not claim that target was checked. Continue only with independent targets when safe. | `error[io.failed] src/lib.rs: failed to read file: Permission denied` |
 | Internal error | Emit exactly one user-safe `error[internal.unexpected]` summary, without a backtrace by default, and stop normal checking. | `error[internal.unexpected]: unexpected checker failure; rerun with --debug and report this error` |

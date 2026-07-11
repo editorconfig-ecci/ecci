@@ -38,7 +38,7 @@ one-based lines and columns whenever available. The final summary is written to
 standard output.
 
 ```text
-error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab
+error[indent_style.invalid_value] src/lib.rs:14:1: expected indent_style=space; detected indent_style=tab
 Checked 1 files: 1 violations, 0 skipped, 0 execution errors.
 ```
 
@@ -50,7 +50,7 @@ identified without parsing the message. Current codes are:
 | `indent_style.invalid_value` | An indentation character conflicts with `indent_style`. |
 | `indent_size.invalid_value` | Space indentation is not a multiple of `indent_size`. |
 | `end_of_line.invalid_value` | A line ending conflicts with `end_of_line`. |
-| `charset.invalid_value` | File bytes do not conform to `charset`. |
+| `charset.invalid_value` | The detected byte encoding conflicts with `charset`. |
 | `trim_trailing_whitespace.present` | Trailing whitespace is present when it must be removed. |
 | `insert_final_newline.missing` | A required final newline is missing. |
 | `max_line_length.exceeded` | A line exceeds `max_line_length`. |
@@ -58,6 +58,10 @@ identified without parsing the message. Current codes are:
 Non-property diagnostics use reserved namespaces: `config.invalid`,
 `io.failed`, `internal.unexpected`, and `selection.skipped`. Codes are stable;
 messages may gain context. Human-readable text is not a machine-readable API.
+Property findings state the configured expectation and the detected value when
+it is scalar. For non-scalar mismatches they report concrete evidence such as a
+trailing-whitespace byte count, a missing byte-order mark, or an invalid byte
+sequence. GitHub Action annotations and summaries use the same messages.
 An empty selection is reported as `Checked 0 files: no targets selected.`
 
 The string codes replace the earlier `ECCI001`--`ECCI007`, `ECCI-CONFIG`,

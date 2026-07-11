@@ -110,6 +110,9 @@ fn action_emits_escaped_limited_annotations_outputs_and_one_summary() {
         .success()
         .stdout(
             predicate::str::contains("file=a%2C100%25.txt,line=1,col=1")
+                .and(predicate::str::contains(
+                    "expected indent_style=space; detected indent_style=tab",
+                ))
                 .and(predicate::str::contains("1 annotations suppressed")),
         );
     assert_eq!(
@@ -119,6 +122,7 @@ fn action_emits_escaped_limited_annotations_outputs_and_one_summary() {
     let summary = fs::read_to_string(&fixture.summary).unwrap();
     assert_eq!(summary.matches("## ecci").count(), 1);
     assert!(summary.contains("| 2 | 2 | 0 | 0 |"));
+    assert!(summary.contains("expected indent_style=space; detected indent_style=tab"));
 }
 
 #[test]

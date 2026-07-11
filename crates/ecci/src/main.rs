@@ -158,7 +158,7 @@ impl ecci_checker::Output for CheckerOutput<'_> {
         &mut self,
         line: usize,
         start: usize,
-        _length: usize,
+        length: usize,
         path: &str,
         content: &str,
         rule: &str,
@@ -166,13 +166,8 @@ impl ecci_checker::Output for CheckerOutput<'_> {
         let (property, _kind) = rule
             .split_once('.')
             .expect("checker diagnostic codes must use property.kind");
-        let (expected, observed) = finding_values(self.config, property, content, start);
-        let message = match (&expected, &observed) {
-            (Some(expected), Some(observed)) => {
-                format!("{property} must be {expected}; found {observed}")
-            }
-            _ => format!("{property} does not conform"),
-        };
+        let (expected, observed) = finding_values(self.config, property, content, start, length);
+        let message = format_finding_message(property, expected.as_deref(), observed.as_deref());
         let mut finding = Finding::new(rule, property, message);
         finding.expected = expected;
         finding.observed = observed;
@@ -190,19 +185,22 @@ fn finding_values(
     rule: &str,
     content: &str,
     start: usize,
+    length: usize,
 ) -> (Option<String>, Option<String>) {
     let observed = match rule {
         "indent_style" => content
             .as_bytes()
             .get(start)
             .map(|b| if *b == b'\t' { "tab" } else { "space" }.into()),
-        "max_line_length" => Some(
-            content
-                .trim_end_matches(['\r', '\n'])
-                .chars()
-                .count()
-                .to_string(),
-        ),
+        "indent_size" => Some(length.to_string()),
+        "end_of_line" => Some(detected_line_endings(config, content, start)),
+        "charset" => Some(detected_charset_detail(config).into()),
+        "trim_trailing_whitespace" => Some(format!("{length} trailing whitespace bytes")),
+        "insert_final_newline" => Some("final newline absent".into()),
+        "max_line_length" => Some(format!(
+            "{} bytes",
+            content.trim_end_matches(['\r', '\n']).len()
+        )),
         _ => None,
     };
     let expected = match rule {
@@ -216,16 +214,107 @@ fn finding_values(
             ecci_editorconfig::EndOfLine::CRLF => "crlf".into(),
             ecci_editorconfig::EndOfLine::CR => "cr".into(),
         }),
-        "charset" => config
-            .charset
-            .as_ref()
-            .map(|value| format!("{value:?}").to_ascii_lowercase()),
-        "trim_trailing_whitespace" => Some("no trailing whitespace".into()),
-        "insert_final_newline" => Some("a final newline".into()),
+        "charset" => config.charset.as_ref().map(charset_name),
+        "trim_trailing_whitespace" => config
+            .trim_trailing_whitespace
+            .map(|value| value.to_string()),
+        "insert_final_newline" => config.insert_final_newline.map(|value| value.to_string()),
         "max_line_length" => config.max_line_length.map(|value| value.to_string()),
         _ => None,
     };
     (expected, observed)
+}
+
+fn format_finding_message(
+    property: &str,
+    expected: Option<&str>,
+    observed: Option<&str>,
+) -> String {
+    match (expected, observed) {
+        (Some(expected), Some(observed)) => {
+            format!("expected {property}={expected}; detected {property}={observed}")
+        }
+        (Some(expected), None) => {
+            format!("expected {property}={expected}; no detected value available")
+        }
+        (None, Some(observed)) => format!("detected {property}={observed}"),
+        (None, None) => format!("{property} check failed without an observable scalar value"),
+    }
+}
+
+fn detected_line_endings(
+    config: &ecci_editorconfig::Config,
+    content: &str,
+    start: usize,
+) -> String {
+    if let Ok(bytes) = std::fs::read(&config.path) {
+        let mut crlf = 0;
+        let mut cr = 0;
+        let mut lf = 0;
+        let mut index = 0;
+        while index < bytes.len() {
+            match bytes[index..].get(..2) {
+                Some(b"\r\n") => {
+                    crlf += 1;
+                    index += 2;
+                    continue;
+                }
+                _ if bytes[index] == b'\r' => cr += 1,
+                _ if bytes[index] == b'\n' => lf += 1,
+                _ => {}
+            }
+            index += 1;
+        }
+        let kinds = usize::from(crlf > 0) + usize::from(cr > 0) + usize::from(lf > 0);
+        if kinds > 1 {
+            return format!("mixed (crlf={crlf}, cr={cr}, lf={lf})");
+        }
+        if crlf > 0 {
+            return "crlf".into();
+        }
+        if cr > 0 {
+            return "cr".into();
+        }
+        if lf > 0 {
+            return "lf".into();
+        }
+    }
+    match content.as_bytes().get(start..) {
+        Some(bytes) if bytes.starts_with(b"\r\n") => "crlf".into(),
+        Some(bytes) if bytes.starts_with(b"\r") => "cr".into(),
+        Some(bytes) if bytes.starts_with(b"\n") => "lf".into(),
+        _ => "unrecognized line ending".into(),
+    }
+}
+
+fn charset_name(value: &ecci_editorconfig::Charset) -> String {
+    use ecci_editorconfig::Charset;
+    match value {
+        Charset::Latin1 => "latin1",
+        Charset::UTF8 => "utf-8",
+        Charset::UTF8BOM => "utf-8-bom",
+        Charset::UTF16BE => "utf-16be",
+        Charset::UTF16LE => "utf-16le",
+    }
+    .into()
+}
+
+fn detected_charset_detail(config: &ecci_editorconfig::Config) -> &'static str {
+    use ecci_editorconfig::Charset;
+    let Ok(bytes) = std::fs::read(&config.path) else {
+        return "encoding mismatch (bytes unavailable for classification)";
+    };
+    match config.charset.as_ref() {
+        Some(Charset::UTF8) if bytes.starts_with(b"\xef\xbb\xbf") => "utf-8 BOM present",
+        Some(Charset::UTF8) => "invalid utf-8 byte sequence",
+        Some(Charset::UTF8BOM) if !bytes.starts_with(b"\xef\xbb\xbf") => "utf-8 BOM absent",
+        Some(Charset::UTF8BOM) => "invalid utf-8 byte sequence after BOM",
+        Some(Charset::UTF16BE) if bytes.starts_with(b"\xff\xfe") => "utf-16le BOM present",
+        Some(Charset::UTF16LE) if bytes.starts_with(b"\xfe\xff") => "utf-16be BOM present",
+        Some(Charset::UTF16BE | Charset::UTF16LE) if bytes.len() % 2 != 0 => "odd byte count",
+        Some(Charset::UTF16BE | Charset::UTF16LE) => "invalid utf-16 code unit sequence",
+        _ => "encoding mismatch",
+    }
 }
 
 fn skip_message(reason: SkipReason) -> &'static str {
