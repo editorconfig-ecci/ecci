@@ -28,11 +28,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Setup Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          components: rustfmt
-          bins: taplo-cli
+      - name: Install rustfmt
+        run: rustup component add rustfmt
+      - name: Install Taplo
+        uses: taiki-e/install-action@taplo
       - name: Run format
         run: |
           cargo fmt --all -- --check
