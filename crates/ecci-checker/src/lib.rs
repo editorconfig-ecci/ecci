@@ -49,11 +49,6 @@ fn check_line<T: Output>(
 }
 
 pub fn check_all<T: Output>(config: &Config, output: &mut T) -> std::io::Result<()> {
-    // test code
-    println!("Checking {}", config.path.display());
-    // output.output(1, 0, 5, "test.txt", "WRONG test", "testrule");
-
-    // real implementation
     let mut bytes = Vec::new();
     std::fs::File::open(&config.path)?.read_to_end(&mut bytes)?;
     charset::check_charset(config, output, &bytes);

@@ -2,12 +2,10 @@
 
 ## Status and scope
 
-This document defines the public result-reporting contract for the first stable
-`ecci` command-line interface (CLI) and its GitHub Action. The shared in-memory
-model and text renderer are implemented in `ecci-report`; wiring the model into
-target selection, checker execution, the CLI, and the Action remains separate
-work. The examples below therefore define required behavior and are not a
-claim that the current CLI prototype exposes it yet.
+This document defines the public result-reporting contract for the `ecci`
+command-line interface (CLI) and its GitHub Action. The shared model, text
+renderer, target selection, and checker-backed CLI are implemented. Wiring the
+same model into the Action remains separate work.
 
 The design distinguishes a **finding** (a checked file does not conform) from
 an **execution error** (the command could not reliably complete the requested

@@ -7,5 +7,7 @@ Add a focused page here when a user-facing feature needs explanation. Link that
 page from this index and, when it is a primary entry point, from the repository
 [README](../../README.md).
 
-- [CLI usage](cli.md) explains the current prototype, configuration discovery,
-  implemented checks, exit behavior, and roadmap.
+- [CLI usage](cli.md) explains path arguments, configuration discovery,
+  path selection, implemented checks, and current exit behavior.
+- [`.ecciignore` configuration](ecciignore.md) explains ignore locations,
+  pattern syntax, precedence, negation, and binary force-check behavior.

@@ -22,19 +22,21 @@ cargo build --release --package ecci
 
 ## Basic usage
 
-Run the current CLI prototype from the repository root:
+Pass files or directories to the CLI. Directories are searched recursively; if
+no path is supplied, the current directory is used.
 
 ```sh
-cargo run --package ecci
+cargo run --package ecci -- src tests
 ```
 
-The prototype currently resolves the `.editorconfig` settings for `Cargo.toml`
-and prints its indentation style. It does not yet accept path arguments or
-report conformance results.
+The command writes its summary to standard output, diagnostics to standard
+error, and returns a nonzero status for violations or execution errors. See the
+CLI documentation for options and the complete exit-status contract.
 
 ## Documentation
 
-- [CLI usage, configuration, checks, and roadmap](docs/user/cli.md)
+- [CLI usage, configuration, and checks](docs/user/cli.md)
+- [`.ecciignore` configuration](docs/user/ecciignore.md)
 - [Development and testing](docs/development/README.md)
 - [Technical design documentation](docs/design/README.md)
 - [Documentation governance](docs/design/documentation-governance.md)

@@ -163,7 +163,26 @@ fn parse_internal(path: &Path) -> std::io::Result<Config> {
                     if value.eq_ignore_ascii_case("unset") {
                         config.max_line_length = None;
                     } else {
-                        config.max_line_length = Some(value.parse().unwrap());
+                        let length = match value.parse() {
+                            Ok(length) if length > 0 => length,
+                            Ok(_) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!(
+                                        "invalid max_line_length value {value:?}: must be a positive integer"
+                                    ),
+                                ));
+                                break;
+                            }
+                            Err(error) => {
+                                parse_error = Some(Error::new(
+                                    ErrorKind::InvalidData,
+                                    format!("invalid max_line_length value {value:?}: {error}"),
+                                ));
+                                break;
+                            }
+                        };
+                        config.max_line_length = Some(length);
                     }
                 }
                 _ => {}
