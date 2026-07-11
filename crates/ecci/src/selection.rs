@@ -121,6 +121,16 @@ fn walk_directory(root: &Path, selection: &mut Selection, identities: &mut HashM
         .git_global(false)
         .git_exclude(false)
         .ignore(false);
+    let filter_root = root.to_path_buf();
+    builder.filter_entry(move |entry| {
+        entry.path() == filter_root
+            || !entry
+                .file_type()
+                .is_some_and(|file_type| file_type.is_dir())
+            || ignore_decision(&filter_root, entry.path(), true)
+                .map(|decision| decision.excluded.is_none())
+                .unwrap_or(true)
+    });
 
     for entry in builder.build() {
         let entry = match entry {
@@ -156,7 +166,7 @@ fn walk_directory(root: &Path, selection: &mut Selection, identities: &mut HashM
             if entry.file_name() == ".ecciignore" {
                 continue;
             }
-            match ignore_decision(root, entry.path()) {
+            match ignore_decision(root, entry.path(), false) {
                 Ok(decision) => process_file(
                     entry.path(),
                     false,
@@ -185,10 +195,11 @@ struct IgnoreDecision {
 fn ignore_decision(
     root: &Path,
     path: &Path,
+    is_dir: bool,
 ) -> Result<IgnoreDecision, (PathBuf, &'static str, String)> {
     let git = build_ignore(root, path, ".gitignore")?;
     let ecci = build_ignore(root, path, ".ecciignore")?;
-    let ecci_match = ecci.matched(path, false);
+    let ecci_match = ecci.matched(path, is_dir);
     if ecci_match.is_whitelist() {
         return Ok(IgnoreDecision {
             force_check: true,
@@ -204,7 +215,7 @@ fn ignore_decision(
     Ok(IgnoreDecision {
         force_check: false,
         excluded: git
-            .matched(path, false)
+            .matched(path, is_dir)
             .is_ignore()
             .then_some(SkipReason::Gitignore),
     })
@@ -345,7 +356,7 @@ fn direct_path_is_ignored(path: &Path) -> bool {
         return false;
     };
     canonical_path.starts_with(&canonical_cwd)
-        && ignore_decision(&canonical_cwd, &canonical_path)
+        && ignore_decision(&canonical_cwd, &canonical_path, false)
             .map(|decision| decision.excluded.is_some())
             .unwrap_or(false)
 }
@@ -410,6 +421,51 @@ mod tests {
             .collect();
         names.sort();
         names
+    }
+
+    fn copy_tree(source: &Path, destination: &Path) {
+        fs::create_dir_all(destination).unwrap();
+        for entry in fs::read_dir(source).unwrap() {
+            let entry = entry.unwrap();
+            let destination = destination.join(entry.file_name());
+            if entry.file_type().unwrap().is_dir() {
+                copy_tree(&entry.path(), &destination);
+            } else {
+                fs::copy(entry.path(), destination).unwrap();
+            }
+        }
+    }
+
+    fn assert_discovery_fixture(ignore_filename: &str) {
+        let temp = configured_tree();
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../testdata/file-discovery")
+            .join(ignore_filename.trim_matches('.'));
+        copy_tree(&fixture, temp.path());
+        fs::rename(
+            temp.path().join("ignore"),
+            temp.path().join(ignore_filename),
+        )
+        .unwrap();
+
+        let selection = select_paths([temp.path()]);
+        let mut relative: Vec<_> = selection
+            .files
+            .iter()
+            .filter_map(|file| file.path.strip_prefix(temp.path()).ok())
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect();
+        relative.sort();
+        assert!(relative.contains(&"visible.txt".into()));
+        assert!(relative.contains(&"ignored/reincluded.txt".into()));
+        assert!(!relative.contains(&"ignored/not-visited.txt".into()));
+        assert!(!relative.iter().any(|path| path.starts_with("target/")));
+    }
+
+    #[test]
+    fn ignored_directories_are_pruned_for_both_ignore_file_types() {
+        assert_discovery_fixture(".gitignore");
+        assert_discovery_fixture(".ecciignore");
     }
 
     fn has_skip(selection: &Selection, name: &str, reason: SkipReason) -> bool {

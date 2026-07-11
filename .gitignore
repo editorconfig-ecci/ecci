@@ -1,1 +1,5 @@
-/target
+target/
+!/testdata/file-discovery/gitignore/target/
+!/testdata/file-discovery/gitignore/target/**
+!/testdata/file-discovery/ecciignore/target/
+!/testdata/file-discovery/ecciignore/target/**
