@@ -5,8 +5,9 @@
 `ecci` will initially use an embedded, deterministic binary-file classifier. It
 will be mandatory as part of file selection, will read only a bounded prefix,
 and will explicitly recognise UTF-16 before applying a NUL-byte heuristic.
-Files classified as binary are skipped without producing EditorConfig
-diagnostics.
+Files classified as binary are normally skipped without producing EditorConfig
+diagnostics. The documented final `.ecciignore` whitelist is the sole initial
+force-check exception.
 
 The Rust Magika command-line interface (CLI) is **not a required runtime
 dependency** and will not be added to the initial Docker action image. A
@@ -101,8 +102,11 @@ and [Magika guidance for automated output](https://securityresearch.google/magik
 
 ## Initial embedded classifier
 
-For each regular file, the traversal layer resolves its `.editorconfig`
-settings, reads at most 8 KiB, and classifies the sample in this order:
+For each regular file that remains after ignore selection, the selection layer
+resolves its `.editorconfig` settings, reads at most 8 KiB, and classifies the
+sample in this order. Classification still runs for a candidate marked
+`force_check`; that flag overrides only the subsequent `Binary` exclusion and
+does not alter or short-circuit the classifier:
 
 1. An empty sample is text.
 2. `FF FE` and `FE FF` (UTF-16 little- and big-endian BOMs) are text.
@@ -164,6 +168,11 @@ covered by automated tests:
   reported; without that configuration it follows the ordinary sampled rule.
 - Permission/read errors and optional-detector errors are reported and do not
   silently skip a path.
+- A final `.ecciignore` whitelist is already recorded before classification;
+  classification still runs and records `Binary`, after which `force_check`
+  causes the candidate to reach the checker. Tests verify that the classifier
+  receives only the resolved charset and bytes and does not consume or
+  reconstruct ignore state.
 - Directory traversal tests prove binary selection is independent of filename
   extension, and a Docker-action smoke test exercises the same fixtures.
 
@@ -189,6 +198,14 @@ returns `Binary`. This is the escape hatch for text files incorrectly excluded
 by the classifier. It does not make directories or special files checkable,
 and it does not suppress normal I/O or charset errors.
 
+The file-selection layer owns final ignore-rule evaluation and passes a
+structured ignore decision into this classifier. The classifier returns only
+`Text` or `Binary` (or a read error); it neither reruns ignore matching nor
+decides whether a `Binary` result is excluded. The selection layer records the
+classifier result and applies `force_check` afterward. This boundary preserves
+the final matching rule as provenance and prevents a walker eligibility
+boolean from being mistaken for a final whitelist match.
+
 Use the Rust [`ignore` crate](https://docs.rs/ignore/) for traversal and
 `.gitignore`-compatible parsing. `WalkBuilder` can discover
 `.ecciignore` through `add_custom_ignore_filename`; its custom ignore files
@@ -196,8 +213,11 @@ take precedence over standard ignore files. The traversal implementation must
 also retain the `.ecciignore` match result with the candidate path. A walker
 alone only tells `ecci` that the path is eligible for traversal; it does not
 preserve whether eligibility came from a negated pattern. Use the crate's
-lower-level `gitignore::Gitignore` matcher (or an equivalent wrapper) to record
-the final ignore/whitelist match and set `force_check` for a final whitelist.
+lower-level `gitignore::Gitignore` matcher (or an equivalent wrapper) through
+the structured ignore-decision API defined in
+[CLI file selection](cli-file-selection.md#ignore-rules-and-selection-order).
+That API records the final ignore/whitelist match and sets `force_check` for a
+final `.ecciignore` whitelist.
 
 The implementation task must include user documentation under `docs/user/`
 covering location, pattern syntax, precedence with `.gitignore`, negation and
@@ -208,8 +228,6 @@ should remain limited to a link if a user-facing configuration page is added.
 
 - Should a future strict optional-Magika mode fail the command when Magika is
   unavailable, or is fallback-only behaviour sufficient for all users?
-- Should malformed UTF-16 with a configured UTF-16 charset always bypass
-  binary exclusion, as proposed, to guarantee a charset diagnostic?
 - What false-positive/false-negative rate on the evaluation corpus would
   justify the additional image size and supply-chain maintenance?
 - If Magika is adopted, should it be a separately tagged action image or an

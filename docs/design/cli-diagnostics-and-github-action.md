@@ -40,14 +40,22 @@ individual messages as identifiers.
 Each diagnostic has a severity, category, message, optional path, and optional
 one-based line and column. A finding additionally identifies the checked
 EditorConfig property, expected value, and observed value when those values are
-available. Paths are relative to the invocation working directory whenever
-possible and use forward slashes in rendered output.
+available. CLI paths use the invocation working directory captured at process
+startup as their display base. The first selected spelling is made absolute
+against that base and lexically normalized, but is not canonicalized merely for
+display; it is then rendered relative to the base. This preserves a user's
+direct symbolic-link spelling. If a relative path cannot be represented, such
+as across Windows volumes, the normalized absolute spelling is rendered. Paths
+use forward slashes in all rendered output. Display-path choice never supplies
+file identity or workspace-containment evidence.
 
 The initial text format is intended for terminals and CI logs, not as a
 machine-readable API. One diagnostic is rendered on one line; the location is
 omitted when unavailable. Findings use `error`, skipped work uses `warning`,
 and fatal execution errors use `error`. Detailed progress is never mixed into
-the diagnostic stream unless requested.
+the diagnostic stream unless requested. Skip diagnostics are not shown by
+default. `--show-skips` requests their `ECCI-SKIP` warning lines; skipped files
+remain counted in either mode.
 
 ```text
 error[ECCI001] src/lib.rs:14:1: indent_style must be space; found tab
@@ -101,12 +109,12 @@ filter matched nothing.
 ## GitHub Action interface
 
 The published Action is a Docker Action that invokes the same checker and
-report model as the CLI. Its first-release interface is proposed as follows:
+report model as the CLI. Its first-release interface is defined as follows:
 
 | Input | Required | Default | Meaning |
 | --- | --- | --- | --- |
-| `paths` | No | `.` | Newline-separated repository-relative files or directories to check. |
-| `working-directory` | No | `${{ github.workspace }}` | Directory used to resolve `paths` and relative locations. It must remain inside the workspace. |
+| `paths` | No | `.` | Newline-separated files or directories, relative to `working-directory`, to check. |
+| `working-directory` | No | `.` | Workspace-relative directory used to resolve `paths`. It must resolve to an existing directory inside the workspace. |
 | `fail-on-violation` | No | `true` | When `true`, violations make the Action fail; when `false`, they are reported but the Action succeeds unless an execution error occurs. |
 | `annotations` | No | `true` | Emit GitHub Actions annotations when running in GitHub Actions. |
 | `summary` | No | `true` | Write the aggregate result to the GitHub Actions job summary. |
@@ -117,6 +125,50 @@ Boolean and numeric inputs must be validated strictly. Invalid input is an
 Action configuration error, produces an `ECCI-CONFIG` annotation when possible,
 and fails the Action. The Action must reject a `working-directory` or path that
 resolves outside `GITHUB_WORKSPACE`.
+
+`GITHUB_WORKSPACE` is the immutable containment and annotation base. The Action
+canonicalizes it first. `working-directory` must be relative (an absolute value
+is rejected), is resolved against that base, and is lexically normalized. Both
+that lexical result and its canonical result must be contained by the canonical
+workspace. It must name an existing directory. Thus a lexical escape is not
+made valid by a symbolic link back into the workspace, and a contained lexical
+path is rejected if symbolic-link resolution escapes. The default `.` means the
+workspace root.
+
+The Action parses `paths` by splitting on lines, removing a trailing carriage
+return, trimming leading and trailing ASCII whitespace from each line, and
+discarding empty lines. GitHub Actions does not reliably distinguish an omitted
+optional string input from an explicitly empty one, so zero entries after this
+processing means one entry, `.`. Paths containing leading or trailing ASCII
+whitespace cannot be expressed through this input. Each entry must be relative;
+absolute paths are configuration errors.
+
+Each path is resolved against the canonical working directory and lexically
+normalized before filesystem access. A lexical `..` is allowed only when the
+normalized absolute result remains within the canonical workspace. For an
+existing path, the whole path is canonicalized. For a nonexistent path, the
+Action canonicalizes its longest existing ancestor and lexically appends the
+remaining components. The resulting resolved path must also remain within the
+canonical workspace. This catches an escape through an existing symbolic-link
+ancestor even when the final component does not exist. A contained nonexistent
+path proceeds to normal selection and becomes `ECCI-IO`; either a lexical or
+resolved escape is `ECCI-CONFIG`.
+
+Action input de-duplication uses the lexically normalized absolute path as its
+key, with the platform's normal path-comparison semantics, and retains the
+first entry. It intentionally does not use canonical identity: the selection
+layer performs resolved-file identity de-duplication, so aliases and direct
+symbolic links that survive containment are also checked only once while the
+first input spelling remains available for display.
+
+CLI text paths are relative to the invocation working directory when possible,
+as specified above. In the Action, all log, summary, and annotation paths are
+instead relative to the canonical workspace, regardless of
+`working-directory`, because workflow annotations use repository-relative
+locations. Rendered paths use forward slashes. A path for which a contained,
+workspace-relative spelling cannot be produced is omitted from an annotation
+rather than rendered as an absolute host path; containment validation normally
+prevents this case.
 
 The Action has these outputs:
 
@@ -168,8 +220,11 @@ the only Action-specific remapping of the CLI exit contract.
 `log-level=quiet` writes no individual findings to ordinary logs; `summary`
 writes only the final summary; `diagnostic` writes all rendered diagnostics;
 and `debug` also writes safe diagnostic context. Annotation and summary limits
-are applied independently of log level. The Action must report suppression
-counts rather than silently dropping output.
+are applied independently of log level. For Action log rendering,
+`diagnostic` and `debug` enable the CLI's `--show-skips` presentation, while
+`quiet` and `summary` hide individual skip warnings; all levels preserve the
+skipped count. The Action must report suppression counts rather than silently
+dropping output.
 
 ## Acceptance criteria
 
@@ -183,6 +238,23 @@ counts rather than silently dropping output.
 - The Action validates every input, confines selected paths to the workspace,
   produces the declared outputs, and preserves execution-error failures even
   when `fail-on-violation` is false.
+- With no CLI positional path, selection is identical to selecting `.`; skip
+  warnings are hidden by default and `--show-skips` changes only their
+  presentation.
+- Action `diagnostic` and `debug` logs show skip diagnostics, while `quiet` and
+  `summary` logs hide them; every log level reports the same skipped count.
+- Action path parsing ignores blank lines, treats an empty parsed value as `.`,
+  removes normalized duplicates in first-occurrence order, rejects absolute
+  paths and workspace escapes, and reports contained nonexistent paths as I/O
+  errors.
+- CLI display tests prove that paths are based on the startup working
+  directory, use forward slashes, preserve the first direct symbolic-link
+  spelling, and fall back to a normalized absolute path only when a relative
+  spelling cannot be represented.
+- Action tests cover a nested working directory, `..` that remains contained,
+  lexical escapes, symlink escapes, a nonexistent leaf below a symlink escape,
+  duplicate normalized spellings, and workspace-relative forward-slash paths
+  in logs, summaries, and annotations.
 - On GitHub Actions, the Action emits correctly escaped, location-aware
   annotations up to `max-annotations`, reports the suppressed count, and writes
   one bounded job summary when enabled.
@@ -218,9 +290,6 @@ tests must be added before declaring either output stable.
   fail instead of skip? The initial release intentionally skips, matching the
   current discovery-oriented model; a future opt-in policy would need a new
   diagnostic code and documentation.
-- Which target-selection and ignore-file semantics will the CLI expose, and how
-  will they distinguish an empty selection from an excluded path? This design
-  fixes their result semantics but not their selection syntax.
 - Should the future JSON format be one complete document, newline-delimited
   JSON records, or support both? The choice affects streaming and schema
   versioning.
