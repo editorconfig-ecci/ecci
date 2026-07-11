@@ -87,7 +87,7 @@ fn violation_has_stable_code_and_one_based_location() {
         .code(1)
         .stdout("Checked 1 files: 1 violations, 0 skipped, 0 execution errors.\n")
         .stderr(predicate::str::contains(
-            "error[ECCI001] target.txt:2:1: indent_style must be space; found tab\n",
+            "error[indent_style.invalid_value] target.txt:2:1: indent_style must be space; found tab\n",
         ));
 }
 
@@ -101,7 +101,7 @@ fn malformed_configuration_is_status_two_without_platform_error_prose() {
         .code(2)
         .stdout("Checked 0 files: 0 violations, 0 skipped, 1 execution errors.\n")
         .stderr(
-            predicate::str::contains("error[ECCI-CONFIG]")
+            predicate::str::contains("error[config.invalid]")
                 .and(predicate::str::contains("resolve .editorconfig failed")),
         );
 }
@@ -116,7 +116,7 @@ fn missing_target_is_status_three_and_message_is_operation_based() {
         .code(3)
         .stdout("Checked 0 files: 0 violations, 0 skipped, 1 execution errors.\n")
         .stderr(
-            predicate::str::contains("error[ECCI-IO]")
+            predicate::str::contains("error[io.failed]")
                 .and(predicate::str::contains("inspect direct path failed")),
         );
 }
@@ -154,7 +154,7 @@ fn skipped_target_is_counted_and_only_shown_on_request() {
         .assert()
         .success()
         .stderr(predicate::str::contains(
-            "warning[ECCI-SKIP] plain.txt: no .editorconfig applies; skipped",
+            "warning[selection.skipped] plain.txt: no .editorconfig applies; skipped",
         ));
 }
 
@@ -169,8 +169,8 @@ fn independent_mixed_errors_continue_and_execution_error_wins() {
         .code(3)
         .stdout("Checked 1 files: 1 violations, 0 skipped, 1 execution errors.\n")
         .stderr(
-            predicate::str::contains("error[ECCI001]")
-                .and(predicate::str::contains("error[ECCI-IO]")),
+            predicate::str::contains("error[indent_style.invalid_value]")
+                .and(predicate::str::contains("error[io.failed]")),
         );
 }
 
@@ -183,7 +183,7 @@ fn invalid_and_duplicate_controls_are_configuration_errors() {
             .args(args)
             .assert()
             .code(2)
-            .stderr(predicate::str::contains("error[ECCI-CONFIG]"));
+            .stderr(predicate::str::contains("error[config.invalid]"));
     }
 }
 
@@ -198,15 +198,15 @@ fn release_fixture_covers_encoding_binary_ignore_and_nested_config_semantics() {
         .code(1)
         .stdout("Checked 9 files: 2 violations, 2 skipped, 0 execution errors.\n")
         .stderr(
-            predicate::str::contains("error[ECCI001] forced.dat:1:1")
+            predicate::str::contains("error[indent_style.invalid_value] forced.dat:1:1")
                 .and(predicate::str::contains(
-                    "error[ECCI007] nested/nested.txt:1:4",
+                    "error[max_line_length.exceeded] nested/nested.txt:1:4",
                 ))
                 .and(predicate::str::contains(
-                    "warning[ECCI-SKIP] binary.dat: binary file; skipped",
+                    "warning[selection.skipped] binary.dat: binary file; skipped",
                 ))
                 .and(predicate::str::contains(
-                    "warning[ECCI-SKIP] ignored.txt: excluded by .gitignore; skipped",
+                    "warning[selection.skipped] ignored.txt: excluded by .gitignore; skipped",
                 ))
                 .and(predicate::str::contains("bom.utf16le").not())
                 .and(predicate::str::contains("bom.utf16be").not())

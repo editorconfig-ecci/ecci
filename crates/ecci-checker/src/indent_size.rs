@@ -25,7 +25,7 @@ pub fn check_indent_size<T: Output>(
                     indent,
                     &config.path.to_string_lossy(),
                     content,
-                    "indent_size",
+                    "indent_size.invalid_value",
                 );
             }
         }
@@ -60,7 +60,7 @@ mod tests {
                     && *length == 3
                     && path == target_path
                     && content == "   b\n"
-                    && rule == "indent_size"
+                    && rule == "indent_size.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -90,7 +90,7 @@ mod tests {
                     && *length == 2
                     && path == target_path
                     && content == "  b\n"
-                    && rule == "indent_size"
+                    && rule == "indent_size.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -110,7 +110,7 @@ mod tests {
                     && *length == 3
                     && path == target_path
                     && content == "   b\n"
-                    && rule == "indent_size"
+                    && rule == "indent_size.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();
@@ -183,7 +183,7 @@ mod tests {
                     && *length == 2
                     && path == target_path
                     && content == "  b\n"
-                    && rule == "indent_size"
+                    && rule == "indent_size.invalid_value"
             })
             .return_const(());
         check_all(&config, &mut mock).unwrap();

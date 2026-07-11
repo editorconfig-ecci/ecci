@@ -3,7 +3,7 @@ set -eu
 
 config_error() {
   escaped=$(printf '%s' "$1" | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/\n/%0A/g')
-  printf '::error title=ECCI-CONFIG::%s\n' "$escaped"
+  printf '::error title=config.invalid::%s\n' "$escaped"
   if [ -n "${GITHUB_OUTPUT-}" ]; then
     printf 'outcome=configuration-error\nviolations=0\nchecked-files=0\nskipped-files=0\n' >> "$GITHUB_OUTPUT"
   fi

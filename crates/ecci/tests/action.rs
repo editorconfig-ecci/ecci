@@ -151,8 +151,8 @@ fn action_uses_the_cli_selection_report_and_failure_semantics() {
             )),
         )
         .stderr(
-            predicate::str::contains("error[ECCI001] forced.dat:1:1").and(
-                predicate::str::contains("error[ECCI007] nested/nested.txt:1:4"),
+            predicate::str::contains("error[indent_style.invalid_value] forced.dat:1:1").and(
+                predicate::str::contains("error[max_line_length.exceeded] nested/nested.txt:1:4"),
             ),
         );
     assert_eq!(
@@ -217,7 +217,7 @@ fn workspace_escape_and_invalid_inputs_are_configuration_errors() {
         .env("INPUT_PATHS", "../outside")
         .assert()
         .code(2)
-        .stdout(predicate::str::contains("ECCI-CONFIG"));
+        .stdout(predicate::str::contains("config.invalid"));
     fixture
         .command()
         .env("INPUT_FAIL_ON_VIOLATION", "TRUE")

@@ -6,7 +6,7 @@ fn nonzero(value: usize) -> NonZeroUsize {
 
 fn finding() -> Diagnostic {
     let mut finding = Finding::new(
-        "ECCI001",
+        "indent_style.invalid_value",
         "indent_style",
         "indent_style must be space; found tab",
     );
@@ -23,25 +23,25 @@ fn execution_error(kind: ExecutionErrorKind) -> Diagnostic {
 #[test]
 fn exposes_stable_codes_categories_and_finding_values() {
     let finding = finding();
-    assert_eq!(finding.code().as_str(), "ECCI001");
+    assert_eq!(finding.code().as_str(), "indent_style.invalid_value");
     assert_eq!(finding.category(), Category::Finding);
     let skip = Diagnostic::IntentionalSkip(IntentionalSkip {
         message: "no .editorconfig applies; skipped".into(),
         location: None,
     });
-    assert_eq!(skip.code().as_str(), "ECCI-SKIP");
+    assert_eq!(skip.code().as_str(), "selection.skipped");
     assert_eq!(skip.category(), Category::IntentionalSkip);
 
     for (kind, code, category) in [
         (
             ExecutionErrorKind::Configuration,
-            "ECCI-CONFIG",
+            "config.invalid",
             Category::ConfigurationError,
         ),
-        (ExecutionErrorKind::Io, "ECCI-IO", Category::IoError),
+        (ExecutionErrorKind::Io, "io.failed", Category::IoError),
         (
             ExecutionErrorKind::Internal,
-            "ECCI-INTERNAL",
+            "internal.unexpected",
             Category::InternalError,
         ),
     ] {
@@ -61,8 +61,8 @@ fn renders_diagnostics_with_and_without_locations() {
     assert_eq!(
         render_text(&report, TextRenderOptions::default()),
         concat!(
-            "error[ECCI001] src/lib.rs:14:1: indent_style must be space; found tab\n",
-            "error[ECCI-INTERNAL]: could not complete check\n",
+            "error[indent_style.invalid_value] src/lib.rs:14:1: indent_style must be space; found tab\n",
+            "error[internal.unexpected]: could not complete check\n",
             "Checked 1 files: 1 violations, 0 skipped, 1 execution errors.\n"
         )
     );
@@ -158,9 +158,8 @@ fn renderer_keeps_each_diagnostic_and_debug_cause_on_one_line() {
             ..TextRenderOptions::default()
         },
     );
-    assert!(
-        rendered.starts_with("error[ECCI-IO]: failed to read\n  debug: caused by: first  second\n")
-    );
+    assert!(rendered
+        .starts_with("error[io.failed]: failed to read\n  debug: caused by: first  second\n"));
 }
 
 #[test]

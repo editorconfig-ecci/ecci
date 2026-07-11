@@ -25,10 +25,10 @@ impl DiagnosticCode {
     pub fn as_str(&self) -> &str {
         match self {
             Self::Finding(code) => code,
-            Self::Skip => "ECCI-SKIP",
-            Self::Configuration => "ECCI-CONFIG",
-            Self::Io => "ECCI-IO",
-            Self::Internal => "ECCI-INTERNAL",
+            Self::Skip => "selection.skipped",
+            Self::Configuration => "config.invalid",
+            Self::Io => "io.failed",
+            Self::Internal => "internal.unexpected",
         }
     }
 }

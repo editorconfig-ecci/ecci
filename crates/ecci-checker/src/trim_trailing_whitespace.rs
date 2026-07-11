@@ -26,7 +26,7 @@ pub fn check_trim_trailing_whitespace<T: Output>(
                 line.len() - whitespace_start,
                 &config.path.to_string_lossy(),
                 content,
-                "trim_trailing_whitespace",
+                "trim_trailing_whitespace.present",
             )
         }
     }
@@ -59,7 +59,7 @@ mod tests {
                     && *length == 2
                     && path == target_path
                     && content == "b  \n"
-                    && rule == "trim_trailing_whitespace"
+                    && rule == "trim_trailing_whitespace.present"
             })
             .times(1)
             .return_const(());
@@ -79,7 +79,7 @@ mod tests {
                     && *length == 2
                     && path == target_path
                     && content == "  \n"
-                    && rule == "trim_trailing_whitespace"
+                    && rule == "trim_trailing_whitespace.present"
             })
             .times(1)
             .return_const(());
@@ -109,7 +109,7 @@ mod tests {
                     && *length == 1
                     && path == target_path
                     && content == "text \n"
-                    && rule == "trim_trailing_whitespace"
+                    && rule == "trim_trailing_whitespace.present"
             })
             .times(1)
             .return_const(());
@@ -153,7 +153,7 @@ mod tests {
                             && *actual_length == length
                             && path == target_path
                             && actual_content == content
-                            && rule == "trim_trailing_whitespace"
+                            && rule == "trim_trailing_whitespace.present"
                     },
                 )
                 .once()
@@ -187,7 +187,7 @@ mod tests {
                     && *length == 0
                     && path == target_path
                     && content == "last line has a trailing space "
-                    && rule == "insert_final_newline"
+                    && rule == "insert_final_newline.missing"
             })
             .times(1)
             .return_const(());
