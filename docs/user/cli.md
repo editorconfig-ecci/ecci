@@ -28,7 +28,9 @@ targets from being processed.
 - `--` ends option processing, allowing a path beginning with `-`.
 
 Options accept no value and may appear only once. Unsupported options and
-duplicate controls are configuration errors.
+duplicate controls are configuration errors. The CLI does not provide `--help`
+or `--version`; both remain unsupported options for compatibility with the
+existing interface.
 
 ## Diagnostics and output
 

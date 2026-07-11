@@ -188,6 +188,21 @@ fn invalid_and_duplicate_controls_are_configuration_errors() {
 }
 
 #[test]
+fn help_and_version_remain_unsupported_options() {
+    for option in ["--help", "--version"] {
+        Command::cargo_bin("ecci")
+            .unwrap()
+            .arg(option)
+            .assert()
+            .code(2)
+            .stdout("Checked 0 files: 0 violations, 0 skipped, 1 execution errors.\n")
+            .stderr(format!(
+                "error[config.invalid]: unsupported option {option:?}\n"
+            ));
+    }
+}
+
+#[test]
 fn release_fixture_covers_encoding_binary_ignore_and_nested_config_semantics() {
     let fixture = release_fixture();
     Command::cargo_bin("ecci")
