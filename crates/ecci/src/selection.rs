@@ -436,14 +436,14 @@ mod tests {
         }
     }
 
-    fn assert_discovery_fixture(ignore_filename: &str) {
+    fn assert_discovery_fixture(ignore_filename: &str, fixture_filename: &str) {
         let temp = configured_tree();
         let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../testdata/file-discovery")
             .join(ignore_filename.trim_matches('.'));
         copy_tree(&fixture, temp.path());
         fs::rename(
-            temp.path().join("ignore"),
+            temp.path().join(fixture_filename),
             temp.path().join(ignore_filename),
         )
         .unwrap();
@@ -464,8 +464,8 @@ mod tests {
 
     #[test]
     fn ignored_directories_are_pruned_for_both_ignore_file_types() {
-        assert_discovery_fixture(".gitignore");
-        assert_discovery_fixture(".ecciignore");
+        assert_discovery_fixture(".gitignore", "gitignore.fixture");
+        assert_discovery_fixture(".ecciignore", "ecciignore.fixture");
     }
 
     fn has_skip(selection: &Selection, name: &str, reason: SkipReason) -> bool {
