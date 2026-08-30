@@ -4,6 +4,7 @@ mod charset;
 mod end_of_line;
 mod indent_size;
 mod indent_style;
+mod indentation;
 mod insert_final_newline;
 mod max_line_length;
 mod trim_trailing_whitespace;

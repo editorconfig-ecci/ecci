@@ -1,6 +1,13 @@
 use ecci_editorconfig::{Config, IndentStyle};
 
-use crate::Output;
+use crate::{indentation::without_block_comment_decoration_space, Output};
+
+fn space_indent_size(content: &str) -> usize {
+    content
+        .chars()
+        .take_while(|character| *character == ' ')
+        .count()
+}
 
 pub fn check_indent_size<T: Output>(
     config: &Config,
@@ -10,15 +17,14 @@ pub fn check_indent_size<T: Output>(
 ) {
     if let Some(IndentStyle::Space) = config.indent_style {
         if let Some(size) = config.indent_size.filter(|size| *size > 0) {
-            let mut indent = 0;
-            for c in content.chars() {
-                if c == ' ' {
-                    indent += 1;
-                } else {
-                    break;
-                }
-            }
+            let indent = space_indent_size(content);
             if indent % size != 0 {
+                if without_block_comment_decoration_space(content)
+                    .is_some_and(|indent| space_indent_size(indent) % size == 0)
+                {
+                    return;
+                }
+
                 output.output(
                     line_number,
                     0,
@@ -73,6 +79,36 @@ mod tests {
             ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
         let mut mock = MockOutput::new();
         mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_allows_block_comment_decoration_space() {
+        let target_path = "../../testdata/indent_comment/space/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_size_does_not_hide_other_asterisk_indentation_errors() {
+        let target_path = "../../testdata/indent_comment/space/error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .withf(move |line_number, column, length, path, content, rule| {
+                matches!((*line_number, *column, *length), (1, 0, 3) | (2, 0, 5))
+                    && path == target_path
+                    && (content == "   * wrong depth\n" || content == "     *ptr = value\n")
+                    && rule == "indent_size.invalid_value"
+            })
+            .times(2)
+            .return_const(());
+
         check_all(&config, &mut mock).unwrap();
     }
 
