@@ -145,6 +145,23 @@ pushd indent_style
     popd
 popd
 
+# block comment indentation
+[ -d indent_comment ] || mkdir -p indent_comment
+pushd indent_comment
+    [ -d space ] || mkdir -p space
+    pushd space
+        echo -ne "root = true\n[*.target]\nindent_style = space\nindent_size = 4\n" > .editorconfig
+        echo -ne "/**\n * top-level\n */\nfn main() {\n    /**\n     * nested\n     */\n}\n" > no_error.target
+        echo -ne "   * wrong depth\n     *ptr = value\n" > error.target
+    popd
+    [ -d tab ] || mkdir -p tab
+    pushd tab
+        echo -ne "root = true\n[*.target]\nindent_style = tab\n" > .editorconfig
+        echo -ne "/**\n * top-level\n */\nfn main() {\n\t/**\n\t * nested\n\t */\n}\n" > no_error.target
+        echo -ne "  * wrong depth\n\t *ptr = value\n" > error.target
+    popd
+popd
+
 # indent_size
 [ -d indent_size ] || mkdir -p indent_size
 pushd indent_size

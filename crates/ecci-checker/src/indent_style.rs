@@ -1,6 +1,13 @@
 use ecci_editorconfig::{Config, IndentStyle};
 
-use crate::Output;
+use crate::{indentation::without_block_comment_decoration_space, Output};
+
+fn invalid_indent_column(content: &str, invalid_indent_character: char) -> Option<usize> {
+    content
+        .char_indices()
+        .take_while(|(_, character)| matches!(character, ' ' | '\t'))
+        .find_map(|(column, character)| (character == invalid_indent_character).then_some(column))
+}
 
 pub fn check_indent_style<T: Output>(
     config: &Config,
@@ -14,14 +21,13 @@ pub fn check_indent_style<T: Output>(
         None => return,
     };
 
-    let mut invalid_column = None;
-    for (column, character) in content.char_indices() {
-        if !matches!(character, ' ' | '\t') {
-            break;
-        }
-        if character == invalid_indent_character && invalid_column.is_none() {
-            invalid_column = Some(column);
-        }
+    let invalid_column = invalid_indent_column(content, invalid_indent_character);
+
+    if invalid_column.is_some()
+        && without_block_comment_decoration_space(content)
+            .is_some_and(|indent| invalid_indent_column(indent, invalid_indent_character).is_none())
+    {
+        return;
     }
 
     if let Some(column) = invalid_column {
@@ -87,6 +93,36 @@ mod tests {
             ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
         let mut mock = MockOutput::new();
         mock.expect_output().never();
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_style_allows_block_comment_decoration_space() {
+        let target_path = "../../testdata/indent_comment/tab/no_error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output().never();
+
+        check_all(&config, &mut mock).unwrap();
+    }
+
+    #[test]
+    fn check_indent_style_does_not_hide_other_asterisk_indentation_errors() {
+        let target_path = "../../testdata/indent_comment/tab/error.target";
+        let config =
+            ecci_editorconfig::Config::from_path(std::path::Path::new(target_path)).unwrap();
+        let mut mock = MockOutput::new();
+        mock.expect_output()
+            .withf(move |line_number, column, length, path, content, rule| {
+                matches!((*line_number, *column, *length), (1, 0, 1) | (2, 1, 1))
+                    && path == target_path
+                    && (content == "  * wrong depth\n" || content == "\t *ptr = value\n")
+                    && rule == "indent_style.invalid_value"
+            })
+            .times(2)
+            .return_const(());
+
         check_all(&config, &mut mock).unwrap();
     }
 

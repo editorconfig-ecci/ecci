@@ -93,3 +93,10 @@ discovery and precedence, including `root = true`. The checker supports
 `trim_trailing_whitespace`, `insert_final_newline`, and `max_line_length`. The
 adapter also parses `tab_width`. See the
 [EditorConfig specification](https://spec.editorconfig.org/) for details.
+
+For lines shaped like block-comment continuations, the indentation checks allow
+one decorative space immediately before a leading `*` when the remaining
+indentation conforms. The `*` must be followed by whitespace, `/`, or the end
+of the line. This accepts conventional Javadoc-style ` * text` and ` */`
+alignment without hiding an invalid outer indentation level or treating an
+expression such as `*pointer` as comment decoration.
